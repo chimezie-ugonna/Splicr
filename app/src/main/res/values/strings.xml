@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">Splicr</string>
+    <string name="app_name" translatable="false">Splicr</string>
+    <string name="in_app_name" translatable="false">Splicr</string>
+    <string name="web_client_id">272167334619-vb74ja4n4s6v4lu47ue8j637ps9qgtvl.apps.googleusercontent.com</string>
 </resources>

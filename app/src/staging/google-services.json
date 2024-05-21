@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "503514877040",
+    "project_id": "splicr-staging",
+    "storage_bucket": "splicr-staging.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:503514877040:android:61751ab37a644eb18978b5",
+        "android_client_info": {
+          "package_name": "com.splicr.app.staging"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbLVHLQULPCLmAxolhcuW84jW6UyvPGI8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

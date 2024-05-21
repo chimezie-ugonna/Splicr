@@ -22,10 +22,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.splicr.app.staging" />
+                  <option name="mobileSdkAppId" value="1:503514877040:android:61751ab37a644eb18978b5" />
+                  <option name="projectId" value="splicr-staging" />
+                  <option name="projectNumber" value="503514877040" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

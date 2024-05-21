@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "600719221931",
+    "project_id": "splicr-production-51c84",
+    "storage_bucket": "splicr-production-51c84.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:600719221931:android:f30e89e2847734107803ee",
+        "android_client_info": {
+          "package_name": "com.splicr.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtZTaRyw4n2B4Uogm_3fyWtB7VmCLzFFA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
