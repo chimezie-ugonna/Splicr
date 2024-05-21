@@ -19,10 +19,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             SplicrTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
                         name = "Android",
-                        modifier = Modifier.padding(padding)
+                        modifier = Modifier.padding(innerPadding)
                     )
                 }
             }
