@@ -2,4 +2,10 @@
     <string name="app_name" translatable="false">Splicr</string>
     <string name="in_app_name" translatable="false">Splicr</string>
     <string name="web_client_id">272167334619-vb74ja4n4s6v4lu47ue8j637ps9qgtvl.apps.googleusercontent.com</string>
+    <string name="slice_and_dice_your_footage_in_cinematic_gold_using_ai">Slice and dice your footage in cinematic gold using AI</string>
+    <string name="trim_the_excess_keep_the_best_precision_at_your_fingertips">Trim the excess, keep the best. Precision at your fingertips</string>
+    <string name="clip_the_moments_that_matter">Clip the moments that matter</string>
+    <string name="skip">Skip</string>
+    <string name="Continue">Continue</string>
+    <string name="get_started">Get Started</string>
 </resources>

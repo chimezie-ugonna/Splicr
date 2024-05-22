@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dimensions for corner radius -->
+    <dimen name="cornerRadiusSm">4dp</dimen>
+    <dimen name="cornerRadiusMd">8dp</dimen>
+    <dimen name="cornerRadiusLg">20dp</dimen>
+    <dimen name="cornerRadiusXl">100dp</dimen>
+    <!-- Dimensions for corner radius -->
+
+    <!-- Dimensions for spacing -->
+    <dimen name="spacingXxxxs">2dp</dimen>
+    <dimen name="spacingXxxs">4dp</dimen>
+    <dimen name="spacingXxs">6dp</dimen>
+    <dimen name="spacingXs">8dp</dimen>
+    <dimen name="spacingSm">12dp</dimen>
+    <dimen name="spacingXm">15dp</dimen>
+    <dimen name="spacingMd">16dp</dimen>
+    <dimen name="spacingLg">24dp</dimen>
+    <dimen name="spacingXl">30dp</dimen>
+    <dimen name="spacingXxl">34dp</dimen>
+    <dimen name="spacingXxxl">40dp</dimen>
+    <!-- Dimensions for spacing -->
+</resources>
