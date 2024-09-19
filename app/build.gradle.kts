@@ -92,7 +92,8 @@ android {
                 "**/libswresample.so",
                 "**/libswresample_neon.so",
                 "**/libswscale.so",
-                "**/libswscale_neon.so"
+                "**/libswscale_neon.so",
+                "**/libandroidx.graphics.path.so"
             )
         }
     }
