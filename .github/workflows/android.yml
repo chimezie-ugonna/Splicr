@@ -51,6 +51,11 @@ jobs:
           cat release_notes.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
+      # Decode keystore
+      - name: Decode Keystore File
+        run: |
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > splicr-keystore.jks
+
       # Deploy to Google Play Internal Testing for staging branch
       - name: Deploy to Google Play (Internal Testing)
         if: github.ref == 'refs/heads/staging'
@@ -64,6 +69,10 @@ jobs:
           inAppUpdatePriority: 0
           status: inProgress
           changesNotSentForReview: false
+          keystoreFile: splicr-keystore.jks
+          keyAlias: ${{ secrets.KEY_ALIAS }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          storePassword: ${{ secrets.KEYSTORE_PASSWORD }}
 
       # Deploy to Google Play Production for main branch
       - name: Deploy to Google Play (Production)
@@ -78,3 +87,7 @@ jobs:
           inAppUpdatePriority: 1
           status: inProgress
           changesNotSentForReview: false
+          keystoreFile: splicr-keystore.jks
+          keyAlias: ${{ secrets.KEY_ALIAS }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          storePassword: ${{ secrets.KEYSTORE_PASSWORD }}
