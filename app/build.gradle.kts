@@ -34,6 +34,13 @@ android {
             storeFile = file(System.getenv("KEYSTORE_PATH") ?: "splicr-keystore.jks")
             storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "default-store-password"
         }
+
+        create("staging") {
+            keyAlias = System.getenv("KEY_ALIAS") ?: "default-key-alias"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "default-key-password"
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "splicr-keystore.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "default-store-password"
+        }
     }
 
     buildTypes {
@@ -55,7 +62,7 @@ android {
             isMinifyEnabled = false
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("staging")
         }
     }
     compileOptions {

@@ -40,7 +40,7 @@ jobs:
       # Decode and write the keystore file from the base64 secret
       - name: Decode and write the keystore file
         run: |
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > splicr-keystore.jks
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > ${{ github.workspace }}/splicr-keystore.jks
 
       # Build the project with signing
       - name: Build with Gradle
@@ -74,6 +74,10 @@ jobs:
           inAppUpdatePriority: 0
           status: inProgress
           changesNotSentForReview: false
+          keystoreFile: ${{ github.workspace }}/splicr-keystore.jks
+          keyAlias: ${{ secrets.KEY_ALIAS }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          storePassword: ${{ secrets.KEYSTORE_PASSWORD }}
 
       # Deploy to Google Play Production for main branch
       - name: Deploy to Google Play (Production)
@@ -88,3 +92,7 @@ jobs:
           inAppUpdatePriority: 1
           status: inProgress
           changesNotSentForReview: false
+          keystoreFile: ${{ github.workspace }}/splicr-keystore.jks
+          keyAlias: ${{ secrets.KEY_ALIAS }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          storePassword: ${{ secrets.KEYSTORE_PASSWORD }}
