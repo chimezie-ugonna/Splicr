@@ -17,18 +17,18 @@ jobs:
     steps:
       # Checkout the repository
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # Set up JDK
-      - name: Set up JDK 17
-        uses: actions/setup-java@v2
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       # Cache Gradle dependencies
       - name: Cache Gradle packages
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.gradle/caches
@@ -47,28 +47,34 @@ jobs:
         run: |
           echo "Collecting commits for release notes"
           git log $(git describe --tags --abbrev=0)..HEAD --oneline > release_notes.txt
-          echo "::set-output name=notes::$(cat release_notes.txt)"
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+          cat release_notes.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       # Deploy to Google Play Internal Testing for staging branch
       - name: Deploy to Google Play (Internal Testing)
         if: github.ref == 'refs/heads/staging'
-        uses: r0adkll/upload-google-play@v1
+        uses: r0adkll/upload-google-play@v2  # Updated to v2
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_API_KEY }}
           packageName: ${{ secrets.PACKAGE_NAME }}
           releaseFiles: app/build/outputs/bundle/staging/app-staging.aab
           track: internal
-          releaseNotes: ${{ steps.release_notes.outputs.notes }}
-          userFraction: 1.0
+          userFraction: 1  # Corrected to be an integer value
+          inAppUpdatePriority: 0
+          status: completed
+          changesNotSentForReview: false
 
       # Deploy to Google Play Production for main branch
       - name: Deploy to Google Play (Production)
         if: github.ref == 'refs/heads/main'
-        uses: r0adkll/upload-google-play@v1
+        uses: r0adkll/upload-google-play@v2  # Updated to v2
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_API_KEY }}
           packageName: ${{ secrets.PACKAGE_NAME }}
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
           track: production
-          releaseNotes: ${{ steps.release_notes.outputs.notes }}
-          userFraction: 1.0
+          userFraction: 1  # Corrected to be an integer value
+          inAppUpdatePriority: 0
+          status: completed
+          changesNotSentForReview: false
