@@ -54,7 +54,7 @@ jobs:
       # Deploy to Google Play Internal Testing for staging branch
       - name: Deploy to Google Play (Internal Testing)
         if: github.ref == 'refs/heads/staging'
-        uses: r0adkll/upload-google-play@v2  # Updated to v2
+        uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_API_KEY }}
           packageName: ${{ secrets.PACKAGE_NAME }}
@@ -68,7 +68,7 @@ jobs:
       # Deploy to Google Play Production for main branch
       - name: Deploy to Google Play (Production)
         if: github.ref == 'refs/heads/main'
-        uses: r0adkll/upload-google-play@v2  # Updated to v2
+        uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_API_KEY }}
           packageName: ${{ secrets.PACKAGE_NAME }}
