@@ -37,9 +37,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Build the project
+      # Decode and write the keystore file from the base64 secret
+      - name: Decode and write the keystore file
+        run: |
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > splicr-keystore.jks
+
+      # Build the project with signing
       - name: Build with Gradle
         run: ./gradlew clean bundle${{ matrix.variant }} -PversionCode=$VERSION_CODE -PversionName=$VERSION_NAME
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PATH: ${{ github.workspace }}/splicr-keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
 
       # Generate release notes from Git commits
       - name: Generate Release Notes from Git
@@ -50,11 +60,6 @@ jobs:
           echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
           cat release_notes.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-
-      # Decode keystore
-      - name: Decode Keystore File
-        run: |
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > splicr-keystore.jks
 
       # Deploy to Google Play Internal Testing for staging branch
       - name: Deploy to Google Play (Internal Testing)
@@ -69,10 +74,6 @@ jobs:
           inAppUpdatePriority: 0
           status: inProgress
           changesNotSentForReview: false
-          keystoreFile: splicr-keystore.jks
-          keyAlias: ${{ secrets.KEY_ALIAS }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-          storePassword: ${{ secrets.KEYSTORE_PASSWORD }}
 
       # Deploy to Google Play Production for main branch
       - name: Deploy to Google Play (Production)
@@ -87,7 +88,3 @@ jobs:
           inAppUpdatePriority: 1
           status: inProgress
           changesNotSentForReview: false
-          keystoreFile: splicr-keystore.jks
-          keyAlias: ${{ secrets.KEY_ALIAS }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-          storePassword: ${{ secrets.KEYSTORE_PASSWORD }}
