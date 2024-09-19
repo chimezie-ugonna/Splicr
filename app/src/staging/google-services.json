@@ -12,7 +12,20 @@
           "package_name": "com.splicr.app.staging"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "503514877040-66jp31ch5ngsctabdgsi4r6b463sdq43.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.splicr.app.staging",
+            "certificate_hash": "29b6bdeda14c38dcf50f8be6397f5f7986fe5ea2"
+          }
+        },
+        {
+          "client_id": "503514877040-dovv2j1ea0ef4rcs41kosgoddamfbara.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCbLVHLQULPCLmAxolhcuW84jW6UyvPGI8"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "503514877040-dovv2j1ea0ef4rcs41kosgoddamfbara.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

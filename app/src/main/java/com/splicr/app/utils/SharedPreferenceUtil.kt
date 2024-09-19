@@ -24,12 +24,12 @@ object SharedPreferenceUtil {
         return sp.getBoolean("onboarded", false)
     }
 
-    fun permissionsRequested(data: Boolean) {
-        spe.putBoolean("permissionsRequested", data)
+    fun atHomeScreen(data: Boolean) {
+        spe.putBoolean("atHomeScreen", data)
         spe.commit()
     }
 
-    fun permissionsRequested(): Boolean {
-        return sp.getBoolean("permissionsRequested", false)
+    fun atHomeScreen(): Boolean {
+        return sp.getBoolean("atHomeScreen", false)
     }
 }

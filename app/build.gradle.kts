@@ -12,14 +12,14 @@ plugins {
 
 android {
     namespace = "com.splicr.app"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.splicr.app"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 2
-        versionName = "2.0.0"
+        targetSdk = 35
+        versionCode = 3
+        versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -30,20 +30,19 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-        getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
         }
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            isDebuggable = true
+        }
         create("staging") {
-            initWith(getByName("release"))
+            initWith(getByName("debug"))
+            isMinifyEnabled = false
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
             signingConfig = signingConfigs.getByName("debug")
@@ -95,6 +94,11 @@ dependencies {
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.ui.text.google.fonts)
+    implementation(libs.androidx.runtime.livedata)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.googleid)
+    implementation(libs.review.ktx)
+    implementation(libs.firebase.appcheck.debug)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -102,6 +106,28 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation(libs.threetenabp)
+    implementation(libs.accompanist.placeholder.material)
+    implementation(libs.google.firebase.auth)
+    implementation(libs.coil.compose)
+    implementation(libs.ui)
+    implementation(libs.billing)
+    implementation(libs.accompanist.permissions)
+    implementation(libs.ffmpeg.kit.full)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.transcoder)
+    implementation(libs.firebase.vertexai)
+    implementation(libs.firebase.appcheck.playintegrity)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.review)
+    implementation(libs.androidx.constraintlayout.compose)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.gson)
+
 }
 
 easylauncher {
@@ -110,6 +136,18 @@ easylauncher {
             filters(
                 customRibbon(
                     label = "BETA",
+                    labelColor = "#000000",
+                    ribbonColor = "#FFFFFF",
+                    gravity = ColorRibbonFilter.Gravity.BOTTOM,
+                    fontName = "ComicSansMs",
+                    textSizeRatio = 0.1f
+                )
+            )
+        }
+        register("debug") {
+            filters(
+                customRibbon(
+                    label = "DEBUG",
                     labelColor = "#000000",
                     ribbonColor = "#FFFFFF",
                     gravity = ColorRibbonFilter.Gravity.BOTTOM,

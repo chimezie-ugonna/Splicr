@@ -28,6 +28,12 @@ val Typography = Typography(
                 googleFont = GoogleFont("Lato"), fontProvider = provider
             )
         ), fontStyle = FontStyle.Normal, fontSize = 16.sp
+    ), labelLarge = TextStyle(
+        fontFamily = FontFamily(
+            Font(
+                googleFont = GoogleFont("Montserrat"), fontProvider = provider
+            )
+        ), fontStyle = FontStyle.Normal, fontSize = 16.sp
     ), titleSmall = TextStyle(
         fontFamily = FontFamily(
             Font(

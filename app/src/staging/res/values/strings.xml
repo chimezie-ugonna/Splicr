@@ -1,6 +1,4 @@
 <resources>
     <string name="app_name" translatable="false">Splicr Beta</string>
-    <string name="send_a_feedback_to_the_team">Send a feedback to the %1$s team.</string>
-    <string name="the_notifications_permissions_is_required_for_your_feedback">The Notifications permissions is required for your feedback.</string>
-    <string name="web_client_id">272167334619-vb74ja4n4s6v4lu47ue8j637ps9qgtvl.apps.googleusercontent.com</string>
+    <string name="web_client_id">503514877040-dovv2j1ea0ef4rcs41kosgoddamfbara.apps.googleusercontent.com</string>
 </resources>
