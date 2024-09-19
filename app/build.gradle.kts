@@ -74,7 +74,7 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = false
-            excludes += setOf(
+            jniLibs.keepDebugSymbols += setOf(
                 "**/libavcodec.so",
                 "**/libavcodec_neon.so",
                 "**/libavdevice.so",
