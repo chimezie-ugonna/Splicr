@@ -42,7 +42,7 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > ${{ github.workspace }}/splicr-keystore.jks
 
-      # Build the project with signing
+      # Build the project
       - name: Build with Gradle
         run: ./gradlew clean bundle${{ matrix.variant }} -PversionCode=$VERSION_CODE -PversionName=$VERSION_NAME
         env:
@@ -50,6 +50,16 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEYSTORE_PATH: ${{ github.workspace }}/splicr-keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+
+      # Sign the AAB with jarsigner
+      - name: Sign the AAB with jarsigner
+        run: |
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore ${{ github.workspace }}/splicr-keystore.jks \
+            -storepass ${{ secrets.KEYSTORE_PASSWORD }} \
+            -keypass ${{ secrets.KEY_PASSWORD }} \
+            app/build/outputs/bundle/${{ matrix.variant }}/app-${{ matrix.variant }}.aab \
+            ${{ secrets.KEY_ALIAS }}
 
       # Generate release notes from Git commits
       - name: Generate Release Notes from Git
