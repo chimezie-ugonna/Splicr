@@ -1,4 +1,4 @@
-name: Android Continuous Deployment
+name: Android CI/CD
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        variant: [ staging, release ]
+        variant: [staging, release]
 
     steps:
       # Checkout the repository
@@ -39,7 +39,7 @@ jobs:
 
       # Build the project
       - name: Build with Gradle
-        run: ./gradlew clean bundle${{ matrix.variant.capitalize() }} -PversionCode=$VERSION_CODE -PversionName=$VERSION_NAME
+        run: ./gradlew clean bundle${{ matrix.variant }} -PversionCode=$VERSION_CODE -PversionName=$VERSION_NAME
 
       # Generate release notes from Git commits
       - name: Generate Release Notes from Git
