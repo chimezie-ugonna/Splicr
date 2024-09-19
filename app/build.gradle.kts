@@ -50,6 +50,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("release")
+            isDebuggable = false
         }
         debug {
             isMinifyEnabled = false
@@ -63,6 +64,7 @@ android {
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
             signingConfig = signingConfigs.getByName("staging")
+            isDebuggable = false
         }
     }
     compileOptions {
