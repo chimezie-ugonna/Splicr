@@ -2,7 +2,6 @@ buildscript {
     dependencies {
         classpath(libs.google.services)
         classpath(libs.gradle)
-        classpath(libs.firebase.appdistribution.gradle)
     }
     repositories {
         google()
