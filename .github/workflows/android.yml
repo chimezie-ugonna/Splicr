@@ -57,7 +57,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_API_KEY }}
-          packageName: ${{ secrets.PACKAGE_NAME }}
+          packageName: ${{ secrets.PACKAGE_NAME_INTERNAL }}
           releaseFiles: app/build/outputs/bundle/staging/app-staging.aab
           track: internal
           userFraction: 0.99
@@ -71,7 +71,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_API_KEY }}
-          packageName: ${{ secrets.PACKAGE_NAME }}
+          packageName: ${{ secrets.PACKAGE_NAME_PRODUCTION }}
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
           track: production
           userFraction: 0.99
