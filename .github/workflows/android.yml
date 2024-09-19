@@ -60,7 +60,7 @@ jobs:
           packageName: ${{ secrets.PACKAGE_NAME }}
           releaseFiles: app/build/outputs/bundle/staging/app-staging.aab
           track: internal
-          userFraction: 1  # Corrected to be an integer value
+          userFraction: 0.99
           inAppUpdatePriority: 0
           status: completed
           changesNotSentForReview: false
@@ -74,7 +74,7 @@ jobs:
           packageName: ${{ secrets.PACKAGE_NAME }}
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
           track: production
-          userFraction: 1  # Corrected to be an integer value
+          userFraction: 0.99
           inAppUpdatePriority: 0
           status: completed
           changesNotSentForReview: false
