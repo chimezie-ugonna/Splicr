@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     id("com.google.gms.google-services")
-    id("com.google.firebase.appdistribution")
     id("com.starter.easylauncher") version "6.2.0"
 }
 
@@ -36,6 +35,7 @@ android {
             )
         }
         debug {
+            isMinifyEnabled = false
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             isDebuggable = true
@@ -111,8 +111,6 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
-    implementation(libs.firebase.appdistribution.api)
-    implementation(libs.firebase.appdistribution)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage)
@@ -154,6 +152,10 @@ dependencies {
     implementation(libs.converter.gson)
     implementation(libs.okhttp)
     implementation(libs.gson)
+    implementation(libs.ktor.client.core) // Core Ktor Client
+    implementation(libs.ktor.client.android)
+    testImplementation(libs.ktor.client.mock)
+    androidTestImplementation(libs.ktor.client.mock)
 
 }
 

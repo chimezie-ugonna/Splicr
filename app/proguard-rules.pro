@@ -1,4 +1,5 @@
 # Add project specific ProGuard rules here.
+
 -if class androidx.credentials.CredentialManager
 -keep class androidx.credentials.playservices.** {
   *;
