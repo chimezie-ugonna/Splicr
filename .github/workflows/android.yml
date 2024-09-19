@@ -80,14 +80,9 @@ jobs:
           packageName: ${{ secrets.PACKAGE_NAME_INTERNAL }}
           releaseFiles: app/build/outputs/bundle/staging/app-staging.aab
           track: internal
-          userFraction: 0.99
           inAppUpdatePriority: 0
-          status: inProgress
+          status: completed
           changesNotSentForReview: false
-          keystoreFile: ${{ github.workspace }}/splicr-keystore.jks
-          keyAlias: ${{ secrets.KEY_ALIAS }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-          storePassword: ${{ secrets.KEYSTORE_PASSWORD }}
 
       # Deploy to Google Play Production for main branch
       - name: Deploy to Google Play (Production)
@@ -98,11 +93,7 @@ jobs:
           packageName: ${{ secrets.PACKAGE_NAME_PRODUCTION }}
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
           track: production
-          userFraction: 0.99
+          userFraction: 1.0
           inAppUpdatePriority: 1
           status: inProgress
           changesNotSentForReview: false
-          keystoreFile: ${{ github.workspace }}/splicr-keystore.jks
-          keyAlias: ${{ secrets.KEY_ALIAS }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-          storePassword: ${{ secrets.KEYSTORE_PASSWORD }}
