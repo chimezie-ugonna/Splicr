@@ -62,7 +62,7 @@ jobs:
           track: internal
           userFraction: 0.99
           inAppUpdatePriority: 0
-          status: completed
+          status: inProgress
           changesNotSentForReview: false
 
       # Deploy to Google Play Production for main branch
@@ -75,6 +75,6 @@ jobs:
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
           track: production
           userFraction: 0.99
-          inAppUpdatePriority: 0
-          status: completed
+          inAppUpdatePriority: 1
+          status: inProgress
           changesNotSentForReview: false
