@@ -1,16 +1,16 @@
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.splicr.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -26,6 +26,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -63,10 +65,26 @@ fun PrimaryButton(
             modifier = modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
-                .defaultMinSize(minHeight = 51.dp),
+                .clip(MaterialTheme.shapes.small)
+                .background(
+                    brush = if (enabled) {
+                        if (uiEnabled) {
+                            Brush.linearGradient(
+                                0f to MaterialTheme.colorScheme.primary, 1f to Color(0xFF758F3D)
+                            )
+                        } else {
+                            Brush.linearGradient(
+                                0f to MaterialTheme.colorScheme.secondary,
+                                1f to MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    } else Brush.linearGradient(
+                        0f to MaterialTheme.colorScheme.secondary,
+                        1f to MaterialTheme.colorScheme.secondary
+                    )
+                ),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (uiEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onTertiary,
-                disabledContainerColor = MaterialTheme.colorScheme.onTertiary
+                containerColor = Color.Transparent, disabledContainerColor = Color.Transparent
             ),
             enabled = enabled,
             interactionSource = if (!uiEnabled) remember {
@@ -95,7 +113,7 @@ fun PrimaryButton(
                     text = stringResource(id = textResource),
                     modifier = Modifier.align(Alignment.CenterVertically),
                     textAlign = TextAlign.Center,
-                    color = if (!uiEnabled) MaterialTheme.colorScheme.tertiary else textColor
+                    color = if (!uiEnabled) MaterialTheme.colorScheme.onBackground else textColor
                         ?: MaterialTheme.colorScheme.background,
                     style = textStyle ?: MaterialTheme.typography.labelMedium,
                     fontWeight = textFontWeight ?: FontWeight.Normal,
@@ -140,8 +158,7 @@ fun SecondaryButton(
             contentPadding = PaddingValues(all = dimensionResource(id = R.dimen.spacingMd)),
             modifier = modifier
                 .fillMaxWidth()
-                .wrapContentHeight()
-                .defaultMinSize(minHeight = 51.dp),
+                .wrapContentHeight(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary)
         ) {

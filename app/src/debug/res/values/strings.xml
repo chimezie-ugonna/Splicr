@@ -1,0 +1,4 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name" translatable="false">Splicr Debug</string>
+    <string name="web_client_id" tools:ignore="TypographyDashes">491234027774-8pe87g8jtb59pdriqm8pl0h1qjsblq10.apps.googleusercontent.com</string>
+</resources>
