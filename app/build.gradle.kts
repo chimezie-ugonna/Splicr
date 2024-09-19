@@ -27,12 +27,22 @@ android {
         signingConfig = signingConfigs.getByName("debug")
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = System.getenv("KEY_ALIAS") ?: "default-key-alias"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "default-key-password"
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "splicr-keystore.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "default-store-password"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isMinifyEnabled = false
@@ -45,7 +55,7 @@ android {
             isMinifyEnabled = false
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
