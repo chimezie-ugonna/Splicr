@@ -61,17 +61,18 @@ jobs:
             app/build/outputs/bundle/${{ matrix.variant }}/app-${{ matrix.variant }}.aab \
             ${{ secrets.KEY_ALIAS }}
 
-      # Generate release notes from Git commits
-      - name: Generate Release Notes from Git
+      # Generate release notes from the triggering commit
+      - name: Generate Release Notes from Commit
         id: release_notes
         run: |
-          echo "Collecting commits for release notes"
-          git log $(git describe --tags --abbrev=0)..HEAD --oneline > release_notes.txt
-          # Save release notes in a file under the specified directory
-          - name: Save Release Notes
-            run: |
-              mkdir -p release-notes
-              mv release_notes.txt release-notes/${{ matrix.variant }}-whatsnew.txt
+          echo "Generating release notes from the triggering commit"
+          echo "${{ github.event.head_commit.message }}" > release_notes.txt
+
+      # Save release notes to a directory for use in deployment
+      - name: Save Release Notes
+        run: |
+          mkdir -p release-notes
+          mv release_notes.txt release-notes/${{ matrix.variant }}-whatsnew.txt
 
       # Deploy to Google Play Internal Testing for staging branch
       - name: Deploy to Google Play (Internal Testing)
