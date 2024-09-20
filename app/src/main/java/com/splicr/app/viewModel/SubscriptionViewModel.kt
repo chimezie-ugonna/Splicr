@@ -125,7 +125,7 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
             subscriptionStatus.postValue(subscriptionStatus2)
 
             // Check if the purchase includes a free trial
-            val productDetails = productId?.let {
+            val productDetails = productId?.let { it ->
                 billingClient.queryProductDetailsAsync(
                     QueryProductDetailsParams.newBuilder().setProductList(
                         listOf(
