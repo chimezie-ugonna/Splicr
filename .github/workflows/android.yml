@@ -10,10 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        variant: [staging, release]
-
     steps:
       # Checkout the repository
       - name: Checkout code
@@ -42,9 +38,19 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > ${{ github.workspace }}/splicr-keystore.jks
 
+      # Determine the build variant based on the branch
+      - name: Set build variant
+        id: variant
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/staging" ]; then
+            echo "VARIANT=staging" >> $GITHUB_ENV
+          else
+            echo "VARIANT=release" >> $GITHUB_ENV
+          fi
+
       # Build the project
       - name: Build with Gradle
-        run: ./gradlew clean bundle${{ matrix.variant }} -PversionCode=$VERSION_CODE -PversionName=$VERSION_NAME
+        run: ./gradlew clean bundle${{ env.VARIANT }} -PversionCode=$VERSION_CODE -PversionName=$VERSION_NAME
         env:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
@@ -58,23 +64,29 @@ jobs:
             -keystore ${{ github.workspace }}/splicr-keystore.jks \
             -storepass ${{ secrets.KEYSTORE_PASSWORD }} \
             -keypass ${{ secrets.KEY_PASSWORD }} \
-            app/build/outputs/bundle/${{ matrix.variant }}/app-${{ matrix.variant }}.aab \
+            app/build/outputs/bundle/${{ env.VARIANT }}/app-${{ env.VARIANT }}.aab \
             ${{ secrets.KEY_ALIAS }}
 
-      # Generate release notes from the triggering commit
-      - name: Generate Release Notes from Commit
+      # Generate release notes
+      - name: Generate Release Notes
         id: release_notes
         run: |
-          echo "Generating release notes from the triggering commit"
-          echo "${{ github.event.head_commit.message }}" > release_notes.txt
+          echo "Generating release notes from the merge description or commit message"
+          if [ -n "${{ github.event.head_commit.message }}" ]; then
+            echo "${{ github.event.head_commit.message }}" > release_notes.txt
+          elif [ -n "${{ github.event.pull_request.body }}" ]; then
+            echo "${{ github.event.pull_request.body }}" > release_notes.txt
+          else
+            echo "No release notes found" > release_notes.txt
+          fi
 
       # Save release notes to a directory for use in deployment
       - name: Save Release Notes
         run: |
           mkdir -p release-notes
-          mv release_notes.txt release-notes/${{ matrix.variant }}-whatsnew.txt
+          mv release_notes.txt release-notes/${{ env.VARIANT }}-whatsnew.txt
 
-      # Deploy to Google Play Internal Testing for staging branch
+      # Deploy to Google Play
       - name: Deploy to Google Play (Internal Testing)
         if: github.ref == 'refs/heads/staging'
         uses: r0adkll/upload-google-play@v1
@@ -86,7 +98,6 @@ jobs:
           track: internal
           status: draft
 
-      # Deploy to Google Play Production for main branch
       - name: Deploy to Google Play (Production)
         if: github.ref == 'refs/heads/main'
         uses: r0adkll/upload-google-play@v1
