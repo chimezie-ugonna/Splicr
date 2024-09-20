@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "600719221931-ui0v2efrf2me2v1c499bu9u55cebrjtv.apps.googleusercontent.com",
+          "client_id": "600719221931-lltbbfj6ud5h6sb5cc0f09u5m6hnjb7e.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.splicr.app",
-            "certificate_hash": "29b6bdeda14c38dcf50f8be6397f5f7986fe5ea2"
+            "certificate_hash": "e3a09201b49b0b01d2f2d1b7fbf0d36f9fe7b35c"
           }
         },
         {

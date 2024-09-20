@@ -17,8 +17,8 @@ android {
         applicationId = "com.splicr.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 5
-        versionName = "3.1.1"
+        versionCode = 6
+        versionName = "3.2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -28,30 +28,16 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            keyAlias = System.getenv("KEY_ALIAS") ?: "default-key-alias"
-            keyPassword = System.getenv("KEY_PASSWORD") ?: "default-key-password"
-            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "splicr-keystore.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "default-store-password"
+        create("staging") {
+            initWith(getByName("debug"))
         }
 
-        create("staging") {
-            keyAlias = System.getenv("KEY_ALIAS") ?: "default-key-alias"
-            keyPassword = System.getenv("KEY_PASSWORD") ?: "default-key-password"
-            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "splicr-keystore.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "default-store-password"
+        create("release") {
+            initWith(getByName("debug"))
         }
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-            )
-            signingConfig = signingConfigs.getByName("release")
-            isDebuggable = false
-        }
         debug {
             isMinifyEnabled = false
             applicationIdSuffix = ".debug"
@@ -60,11 +46,28 @@ android {
         }
         create("staging") {
             initWith(getByName("debug"))
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            )
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
-            signingConfig = signingConfigs.getByName("staging")
             isDebuggable = false
+            signingConfig = signingConfigs.getByName("staging")
+        }
+        release {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            )
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {

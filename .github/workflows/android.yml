@@ -1,13 +1,15 @@
 name: Android CI/CD
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - staging
       - main
 
 jobs:
   build:
+    if: github.event.pull_request.merged == true  # Only run if the PR is merged
     runs-on: ubuntu-latest
 
     steps:
@@ -48,7 +50,7 @@ jobs:
             echo "VARIANT=release" >> $GITHUB_ENV
           fi
 
-      # Build the project
+      # Build the project with Gradle
       - name: Build with Gradle
         run: ./gradlew clean bundle${{ env.VARIANT }} -PversionCode=$VERSION_CODE -PversionName=$VERSION_NAME
         env:
@@ -67,18 +69,12 @@ jobs:
             app/build/outputs/bundle/${{ env.VARIANT }}/app-${{ env.VARIANT }}.aab \
             ${{ secrets.KEY_ALIAS }}
 
-      # Generate release notes
+      # Generate release notes from merge description
       - name: Generate Release Notes
         id: release_notes
         run: |
-          echo "Generating release notes from the merge description or commit message"
-          if [ -n "${{ github.event.head_commit.message }}" ]; then
-            echo "${{ github.event.head_commit.message }}" > release_notes.txt
-          elif [ -n "${{ github.event.pull_request.body }}" ]; then
-            echo "${{ github.event.pull_request.body }}" > release_notes.txt
-          else
-            echo "No release notes found" > release_notes.txt
-          fi
+          echo "Generating release notes from the merge description"
+          echo "${{ github.event.pull_request.body }}" > release_notes.txt
 
       # Save release notes to a directory for use in deployment
       - name: Save Release Notes
@@ -86,8 +82,28 @@ jobs:
           mkdir -p release-notes
           mv release_notes.txt release-notes/${{ env.VARIANT }}-whatsnew.txt
 
-      # Deploy to Google Play
-      - name: Deploy to Google Play (Internal Testing)
+      # Upload ProGuard/R8 mapping file
+      - name: Upload ProGuard Mapping File
+        run: |
+          if [ -f app/build/outputs/mapping/${{ env.VARIANT }}/mapping.txt ]; then
+            echo "Uploading ProGuard mapping file"
+            # Upload the mapping file to the play store
+          else
+            echo "No ProGuard mapping file found"
+          fi
+
+      # Upload Native Debug Symbols
+      - name: Upload Native Debug Symbols
+        run: |
+          if [ -d app/build/outputs/native-symbols/${{ env.VARIANT }}/ ]; then
+            echo "Uploading native debug symbols"
+            # Upload the native debug symbols to the play store
+          else
+            echo "No native debug symbols found"
+          fi
+
+      # Deploy to Google Play (Internal Testing for Staging)
+      - name: Deploy to Google Play (Staging)
         if: github.ref == 'refs/heads/staging'
         uses: r0adkll/upload-google-play@v1
         with:
@@ -95,9 +111,12 @@ jobs:
           packageName: ${{ secrets.PACKAGE_NAME_INTERNAL }}
           releaseFiles: app/build/outputs/bundle/staging/app-staging.aab
           whatsNewDirectory: release-notes
+          mappingFile: app/build/outputs/mapping/staging/mapping.txt
+          nativeDebugSymbols: app/build/outputs/native-symbols/staging/
           track: internal
           status: draft
 
+      # Deploy to Google Play (Production for Release)
       - name: Deploy to Google Play (Production)
         if: github.ref == 'refs/heads/main'
         uses: r0adkll/upload-google-play@v1
@@ -106,4 +125,7 @@ jobs:
           packageName: ${{ secrets.PACKAGE_NAME_PRODUCTION }}
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
           whatsNewDirectory: release-notes
+          mappingFile: app/build/outputs/mapping/release/mapping.txt
+          nativeDebugSymbols: app/build/outputs/native-symbols/release/
+          track: production
           inAppUpdatePriority: 5
