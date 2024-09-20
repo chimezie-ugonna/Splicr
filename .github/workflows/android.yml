@@ -80,7 +80,7 @@ jobs:
       - name: Save Release Notes
         run: |
           mkdir -p release-notes
-          mv release_notes.txt release-notes/${{ env.VARIANT }}-whatsnew.txt
+          mv release_notes.txt release-notes/whatsnew-en  # Use the correct naming convention
 
       # Upload ProGuard/R8 mapping file
       - name: Upload ProGuard Mapping File
@@ -112,7 +112,7 @@ jobs:
           releaseFiles: app/build/outputs/bundle/staging/app-staging.aab
           whatsNewDirectory: release-notes
           mappingFile: app/build/outputs/mapping/staging/mapping.txt
-          nativeDebugSymbols: app/build/outputs/native-symbols/staging/
+          debugSymbols: app/build/outputs/native-symbols/staging/
           track: internal
           status: draft
 
@@ -126,6 +126,6 @@ jobs:
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
           whatsNewDirectory: release-notes
           mappingFile: app/build/outputs/mapping/release/mapping.txt
-          nativeDebugSymbols: app/build/outputs/native-symbols/release/
+          debugSymbols: app/build/outputs/native-symbols/release/
           track: production
           inAppUpdatePriority: 5
