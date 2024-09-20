@@ -67,9 +67,11 @@ jobs:
         run: |
           echo "Collecting commits for release notes"
           git log $(git describe --tags --abbrev=0)..HEAD --oneline > release_notes.txt
-          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
-          cat release_notes.txt >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          # Save release notes in a file under the specified directory
+          - name: Save Release Notes
+            run: |
+              mkdir -p release-notes
+              mv release_notes.txt release-notes/${{ matrix.variant }}-whatsnew.txt
 
       # Deploy to Google Play Internal Testing for staging branch
       - name: Deploy to Google Play (Internal Testing)
@@ -79,10 +81,9 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_API_KEY }}
           packageName: ${{ secrets.PACKAGE_NAME_INTERNAL }}
           releaseFiles: app/build/outputs/bundle/staging/app-staging.aab
+          whatsNewDirectory: release-notes
           track: internal
-          inAppUpdatePriority: 0
-          status: completed
-          changesNotSentForReview: false
+          status: draft
 
       # Deploy to Google Play Production for main branch
       - name: Deploy to Google Play (Production)
@@ -92,8 +93,5 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_API_KEY }}
           packageName: ${{ secrets.PACKAGE_NAME_PRODUCTION }}
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
-          track: production
-          userFraction: 1.0
-          inAppUpdatePriority: 1
-          status: inProgress
-          changesNotSentForReview: false
+          whatsNewDirectory: release-notes
+          inAppUpdatePriority: 5
