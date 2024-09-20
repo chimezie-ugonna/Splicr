@@ -29,11 +29,17 @@ android {
 
     signingConfigs {
         create("staging") {
-            initWith(getByName("debug"))
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "splicr-keystore.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
         }
 
         create("release") {
-            initWith(getByName("debug"))
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "splicr-keystore.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
         }
     }
 
