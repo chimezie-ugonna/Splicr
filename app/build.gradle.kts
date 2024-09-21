@@ -17,8 +17,8 @@ android {
         applicationId = "com.splicr.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 7
-        versionName = "3.3.1"
+        versionCode = 8
+        versionName = "3.4.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -26,6 +26,8 @@ android {
         }
         signingConfig = signingConfigs.getByName("debug")
     }
+
+    ndkVersion = "27.1.12297006"
 
     signingConfigs {
         create("staging") {
@@ -54,6 +56,7 @@ android {
         create("staging") {
             initWith(getByName("debug"))
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
@@ -67,6 +70,7 @@ android {
         }
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
