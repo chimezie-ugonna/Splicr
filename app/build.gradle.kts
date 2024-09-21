@@ -29,17 +29,17 @@ android {
 
     signingConfigs {
         create("staging") {
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD")
-            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "splicr-keystore.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS") ?: project.properties["KEY_ALIAS"].toString()
+            keyPassword = System.getenv("KEY_PASSWORD") ?: project.properties["KEY_PASSWORD"].toString()
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: project.properties["KEYSTORE_PATH"].toString())
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: project.properties["KEYSTORE_PASSWORD"].toString()
         }
 
         create("release") {
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD")
-            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "splicr-keystore.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS") ?: project.properties["KEY_ALIAS"].toString()
+            keyPassword = System.getenv("KEY_PASSWORD") ?: project.properties["KEY_PASSWORD"].toString()
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: project.properties["KEYSTORE_PATH"].toString())
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: project.properties["KEYSTORE_PASSWORD"].toString()
         }
     }
 
@@ -49,6 +49,7 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             isDebuggable = true
+            signingConfig = signingConfigs.getByName("debug")
         }
         create("staging") {
             initWith(getByName("debug"))
