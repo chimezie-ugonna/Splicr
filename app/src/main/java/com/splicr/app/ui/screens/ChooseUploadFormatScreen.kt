@@ -2,9 +2,7 @@
 
 package com.splicr.app.ui.screens
 
-import android.Manifest
 import android.net.Uri
-import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -58,9 +56,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
 import com.splicr.app.R
 import com.splicr.app.ui.components.AppNameText
 import com.splicr.app.ui.components.CustomSnackBar
@@ -70,7 +65,6 @@ import com.splicr.app.ui.components.PrimaryButton
 import com.splicr.app.ui.theme.SplicrTheme
 import com.splicr.app.viewModel.SubscriptionStatus
 import com.splicr.app.viewModel.SubscriptionViewModel
-import kotlinx.coroutines.launch
 
 
 @Composable
@@ -252,28 +246,6 @@ fun ChooseUploadFormatScreen(
                                 }
                             })
 
-                    val permissionsState = rememberPermissionState(
-                        permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) Manifest.permission.READ_MEDIA_VIDEO else Manifest.permission.READ_EXTERNAL_STORAGE
-                    ) {
-                        if (it) {
-                            videoPickerLauncher.launch(
-                                PickVisualMediaRequest(
-                                    ActivityResultContracts.PickVisualMedia.VideoOnly
-                                )
-                            )
-                        } else {
-                            snackBarIsError.value = true
-                            snackBarMessageResource.intValue =
-                                R.string.you_have_denied_access_to_your_media_files_to_select_and_process_videos_please_grant_the_permission_to_enable_access
-                            snackBarMessage.value = ""
-                            scope.launch {
-                                snackBarHostState.showSnackbar(
-                                    ""
-                                )
-                            }
-                        }
-                    }
-
                     PrimaryButton(
                         modifier = Modifier.padding(
                             top = dimensionResource(id = R.dimen.spacingMd)
@@ -301,31 +273,11 @@ fun ChooseUploadFormatScreen(
                                 navController.navigate("ManageSubscriptionScreen")
                             }
                         } else {
-                            when {
-                                permissionsState.status.isGranted -> {
-                                    videoPickerLauncher.launch(
-                                        PickVisualMediaRequest(
-                                            ActivityResultContracts.PickVisualMedia.VideoOnly
-                                        )
-                                    )
-                                }
-
-                                permissionsState.status.shouldShowRationale -> {
-                                    snackBarIsError.value = true
-                                    snackBarMessageResource.intValue =
-                                        R.string.we_need_access_to_your_media_files_to_allow_you_to_select_and_process_videos_please_grant_the_permission_to_enable_access
-                                    snackBarMessage.value = ""
-                                    scope.launch {
-                                        snackBarHostState.showSnackbar(
-                                            ""
-                                        )
-                                    }
-                                }
-
-                                else -> {
-                                    permissionsState.launchPermissionRequest()
-                                }
-                            }
+                            videoPickerLauncher.launch(
+                                PickVisualMediaRequest(
+                                    ActivityResultContracts.PickVisualMedia.VideoOnly
+                                )
+                            )
                         }
                     }
                 }

@@ -1,6 +1,7 @@
 [versions]
 accompanistPermissions = "0.36.0"
 accompanistPlaceholderMaterial = "0.36.0"
+activityKtx = "1.9.2"
 agp = "8.6.1"
 appcompat = "1.7.0"
 billing = "7.1.0"
@@ -41,6 +42,7 @@ firebaseAppcheckDebug = "18.0.0"
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
 accompanist-placeholder-material = { module = "com.google.accompanist:accompanist-placeholder-material", version.ref = "accompanistPlaceholderMaterial" }
+androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activityKtx" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayoutCompose" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

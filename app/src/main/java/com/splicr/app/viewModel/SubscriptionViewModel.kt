@@ -102,7 +102,7 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
             }
         } else {
             // Handle failure or user cancellation
-            purchaseResult.postValue(Result.failure(Exception("Purchase failed: ${billingResult.debugMessage}")))
+            purchaseResult.postValue(Result.failure(Exception(billingResult.debugMessage)))
         }
     }
 
