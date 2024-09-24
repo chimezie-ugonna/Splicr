@@ -357,11 +357,21 @@ fun FullScreenMediaPlayerScreen(
                                 Text(
                                     text = buildAnnotatedString {
                                         withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                            append(formatDuration(durationMillis = currentPosition2.longValue, shouldBeInFullFormat = false))
+                                            append(
+                                                formatDuration(
+                                                    durationMillis = currentPosition2.longValue,
+                                                    shouldBeInFullFormat = false
+                                                )
+                                            )
                                         }
                                         append(" / ")
                                         withStyle(style = SpanStyle(fontWeight = FontWeight.Normal)) {
-                                            append(formatDuration(durationMillis = duration2.longValue, shouldBeInFullFormat = false))
+                                            append(
+                                                formatDuration(
+                                                    durationMillis = duration2.longValue,
+                                                    shouldBeInFullFormat = false
+                                                )
+                                            )
                                         }
                                     },
                                     color = MaterialTheme.colorScheme.onBackground,

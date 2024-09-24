@@ -180,5 +180,6 @@
     <string name="enter_fullscreen">Enter fullscreen</string>
     <string name="monthly_basic">monthly-basic</string>
     <string name="yearly_basic">yearly-basic</string>
+    <string name="delete_account">Delete Account</string>
 
 </resources>

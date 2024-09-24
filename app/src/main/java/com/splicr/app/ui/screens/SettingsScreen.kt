@@ -128,7 +128,8 @@ fun SettingsScreen(
                         mutableStateOf(false)
                     }
 
-                    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true,
+                    val sheetState = rememberModalBottomSheetState(
+                        skipPartiallyExpanded = true,
                         confirmValueChange = { false })
 
                     val showLoaderBottomSheet = rememberSaveable {
@@ -252,7 +253,7 @@ fun SettingsScreen(
                                     showArrow = false
                                 ), ListItemData(
                                     titleResource = R.string.manage_subscription,
-                                    isHighlightedText = true
+                                    isPrimaryColoredText = true
                                 )
                             )
                         )
@@ -270,7 +271,7 @@ fun SettingsScreen(
                         }
 
                         itemsIndexed(profileListItem.value) { index, item ->
-                            CustomListItem(modifier = if (item.showArrow || item.titleResource == R.string.verify_email || item.titleResource == R.string.sign_out) Modifier
+                            CustomListItem(modifier = if (item.showArrow || item.titleResource == R.string.verify_email || item.titleResource == R.string.sign_out || item.titleResource == R.string.delete_account) Modifier
                                 .customModifier(
                                     index = index, listSize = profileListItem.value.size
                                 )
@@ -318,7 +319,7 @@ fun SettingsScreen(
 
                                         }
 
-                                        else -> {
+                                        R.string.sign_out -> {
                                             if (user.value != null) {
                                                 auth.signOut()
                                                 homeViewModel.stopListening()
@@ -331,6 +332,10 @@ fun SettingsScreen(
                                                 }
                                             }
                                         }
+
+                                        else -> {
+
+                                        }
                                     }
                                 } else Modifier.customModifier(
                                 index = index, listSize = profileListItem.value.size
@@ -340,7 +345,7 @@ fun SettingsScreen(
                                 textString = item.titleString,
                                 subTextString = item.subText,
                                 showArrow = item.showArrow,
-                                textColor = if (item.isHighlightedText) MaterialTheme.colorScheme.primary else if (item.isSignOutText) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground)
+                                textColor = if (item.isPrimaryColoredText) MaterialTheme.colorScheme.primary else if (item.isErrorColoredText) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground)
                         }
 
                         item {
@@ -370,7 +375,7 @@ fun SettingsScreen(
                                 textString = item.titleString,
                                 subTextString = item.subText,
                                 showArrow = item.showArrow,
-                                textColor = if (item.isHighlightedText) MaterialTheme.colorScheme.primary else if (item.isSignOutText) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground)
+                                textColor = if (item.isPrimaryColoredText) MaterialTheme.colorScheme.primary else if (item.isErrorColoredText) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground)
                         }
 
                         item {
@@ -456,7 +461,8 @@ private fun updateProfileListItems(
         user == null -> {
             profileListItems.value = listOf(
                 ListItemData(
-                    titleResource = R.string.create_an_account_or_sign_in, isHighlightedText = true
+                    titleResource = R.string.create_an_account_or_sign_in,
+                    isPrimaryColoredText = true
                 )
             )
         }
@@ -469,10 +475,14 @@ private fun updateProfileListItems(
                     showArrow = false
                 ), ListItemData(
                     titleResource = R.string.verify_email,
-                    isHighlightedText = true,
+                    isPrimaryColoredText = true,
                     showArrow = false
                 ), ListItemData(
-                    titleResource = R.string.sign_out, isSignOutText = true, showArrow = false
+                    titleResource = R.string.sign_out, isErrorColoredText = true, showArrow = false
+                ), ListItemData(
+                    titleResource = R.string.delete_account,
+                    isErrorColoredText = true,
+                    showArrow = false
                 )
             )
         }
@@ -484,7 +494,11 @@ private fun updateProfileListItems(
                     subText = getSignInProvider(user),
                     showArrow = false
                 ), ListItemData(
-                    titleResource = R.string.sign_out, isSignOutText = true, showArrow = false
+                    titleResource = R.string.sign_out, isErrorColoredText = true, showArrow = false
+                ), ListItemData(
+                    titleResource = R.string.delete_account,
+                    isErrorColoredText = true,
+                    showArrow = false
                 )
             )
         }

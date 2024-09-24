@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
@@ -152,7 +153,8 @@ fun CustomBottomSheet(
             dragHandle = null,
             shape = RoundedCornerShape(
                 topStart = 20.dp, topEnd = 20.dp
-            )
+            ),
+            modifier = Modifier.systemBarsPadding()
         ) {
             Column(
                 modifier = Modifier
