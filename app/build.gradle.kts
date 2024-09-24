@@ -17,8 +17,8 @@ android {
         applicationId = "com.splicr.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 9
-        versionName = "4.4.1"
+        versionCode = 10
+        versionName = "5.4.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -26,8 +26,6 @@ android {
         }
         signingConfig = signingConfigs.getByName("debug")
     }
-
-    ndkVersion = "27.1.12297006"
 
     signingConfigs {
         create("staging") {
@@ -197,6 +195,7 @@ dependencies {
     implementation(libs.ktor.client.android)
     testImplementation(libs.ktor.client.mock)
     androidTestImplementation(libs.ktor.client.mock)
+    implementation(libs.androidx.activity.ktx)
 
 }
 
