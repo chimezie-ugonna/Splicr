@@ -181,5 +181,13 @@
     <string name="monthly_basic">monthly-basic</string>
     <string name="yearly_basic">yearly-basic</string>
     <string name="delete_account">Delete Account</string>
+    <string name="no_internet_connection_please_connect_to_the_internet_and_try_again">No internet connection. Please connect to the internet and try again.</string>
+    <string name="subscription_options_are_unavailable_please_try_again_later">Subscription options are unavailable. Please try again later.</string>
+    <string name="you_already_have_an_active_subscription">You already have an active subscription.</string>
+    <string name="subscription_failed_please_try_again">Subscription failed. Please try again.</string>
+    <string name="failed_to_restore_purchases">Failed to restore purchases</string>
+    <string name="failed_to_handle_purchase">Failed to handle purchase</string>
+    <string name="no_purchases_found">No purchases found</string>
+    <string name="purchase_restored_successfully">Purchase restored successfully</string>
 
 </resources>

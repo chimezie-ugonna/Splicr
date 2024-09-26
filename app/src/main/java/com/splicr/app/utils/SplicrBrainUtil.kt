@@ -436,7 +436,7 @@ object SplicrBrainUtil {
         return regex.matches(time)
     }
 
-    private fun isInternetAvailable(context: Context): Boolean {
+    fun isInternetAvailable(context: Context): Boolean {
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork

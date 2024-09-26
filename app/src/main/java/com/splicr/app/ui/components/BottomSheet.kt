@@ -414,7 +414,8 @@ fun CustomBottomSheet(
                                                         try {
                                                             context.startActivity(
                                                                 Intent(
-                                                                    Intent.ACTION_VIEW, Uri.parse(
+                                                                    Intent.ACTION_VIEW,
+                                                                    Uri.parse(
                                                                         "twitter://user?screen_name=${
                                                                             item.subText
                                                                         }"
@@ -424,7 +425,8 @@ fun CustomBottomSheet(
                                                         } catch (e: ActivityNotFoundException) {
                                                             context.startActivity(
                                                                 Intent(
-                                                                    Intent.ACTION_VIEW, Uri.parse(
+                                                                    Intent.ACTION_VIEW,
+                                                                    Uri.parse(
                                                                         "https://twitter.com/${
                                                                             item.subText
                                                                         }"
@@ -438,7 +440,8 @@ fun CustomBottomSheet(
                                                         try {
                                                             context.startActivity(
                                                                 Intent(
-                                                                    Intent.ACTION_VIEW, Uri.parse(
+                                                                    Intent.ACTION_VIEW,
+                                                                    Uri.parse(
                                                                         "instagram://user?username=${
                                                                             item.subText
                                                                         }"
@@ -448,7 +451,8 @@ fun CustomBottomSheet(
                                                         } catch (e: ActivityNotFoundException) {
                                                             context.startActivity(
                                                                 Intent(
-                                                                    Intent.ACTION_VIEW, Uri.parse(
+                                                                    Intent.ACTION_VIEW,
+                                                                    Uri.parse(
                                                                         "https://instagram.com/${
                                                                             item.subText
                                                                         }"
