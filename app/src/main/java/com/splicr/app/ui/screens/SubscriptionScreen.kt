@@ -116,7 +116,9 @@ fun SubscriptionScreen(
 
                 purchaseResult.let { result ->
                     result.value?.onSuccess {
-                        goToHomeScreen(navController = navController)
+                        if (subscriptionStatus.value != SubscriptionStatus.NONE) {
+                            goToHomeScreen(navController = navController)
+                        }
                     }?.onFailure { exception ->
                         snackBarIsError.value = true
                         snackBarMessageResource.intValue = 0
@@ -390,9 +392,7 @@ fun SubscriptionScreen(
                                 activity = context as Activity,
                                 productDetails = productDetails,
                                 basePlanId = basePlanId
-                            ).onSuccess {
-                                goToHomeScreen(navController = navController)
-                            }.onFailure { exception ->
+                            ).onFailure { exception ->
                                 snackBarIsError.value = true
                                 snackBarMessageResource.intValue = 0
                                 snackBarMessage.value = exception.localizedMessage

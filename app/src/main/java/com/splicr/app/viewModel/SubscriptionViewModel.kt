@@ -102,10 +102,22 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("Purchase failed: ${billingResult.debugMessage}"))
+                Result.failure(
+                    Exception(
+                        activity.getString(
+                            R.string.purchase_failed, billingResult.debugMessage
+                        )
+                    )
+                )
             }
         } else {
-            Result.failure(Exception("Offer details not found for basePlanId: $basePlanId"))
+            Result.failure(
+                Exception(
+                    activity.getString(
+                        R.string.offer_details_not_found_for_baseplanid, basePlanId
+                    )
+                )
+            )
         }
     }
 
