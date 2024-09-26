@@ -116,6 +116,7 @@ jobs:
           status: draft
           # Conditionally include debugSymbols if the path exists
           debugSymbols: ${{ env.DEBUG_SYMBOLS != '' && env.DEBUG_SYMBOLS || '' }}
+          changesNotSentForReview: true
 
       # Deploy to Google Play (Production for Release)
       - name: Deploy to Google Play (Production)
@@ -131,3 +132,4 @@ jobs:
           inAppUpdatePriority: 5
           # Conditionally include debugSymbols if the path exists
           debugSymbols: ${{ env.DEBUG_SYMBOLS != '' && env.DEBUG_SYMBOLS || '' }}
+          changesNotSentForReview: true
