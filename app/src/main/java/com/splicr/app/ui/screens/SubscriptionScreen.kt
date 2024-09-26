@@ -107,27 +107,27 @@ fun SubscriptionScreen(
                 }
 
                 val view = LocalView.current
-                val purchaseResult = subscriptionViewModel.purchaseResult.observeAsState()
                 val tabs = listOf(R.string.monthly, R.string.yearly)
                 val pagerState = rememberPagerState(pageCount = { tabs.size })
                 val initialLaunch = remember { mutableStateOf(true) }
                 val subscriptionStatus =
                     subscriptionViewModel.subscriptionStatus.observeAsState(initial = SubscriptionStatus.NONE)
 
-                purchaseResult.let { result ->
-                    result.value?.onSuccess {
-                        if (subscriptionStatus.value != SubscriptionStatus.NONE) {
-                            goToHomeScreen(navController = navController)
-                        }
-                    }?.onFailure { exception ->
-                        snackBarIsError.value = true
-                        snackBarMessageResource.intValue = 0
-                        snackBarMessage.value = exception.localizedMessage
-                            ?: context.getString(R.string.an_unknown_error_occurred)
-                        scope.launch {
-                            snackBarHostState.showSnackbar(
-                                ""
-                            )
+                val purchaseResult = subscriptionViewModel.purchaseResult.observeAsState()
+                LaunchedEffect(purchaseResult.value) {
+                    purchaseResult.value?.let { result ->
+                        result.onSuccess {
+                            if (subscriptionStatus.value != SubscriptionStatus.NONE) {
+                                goToHomeScreen(navController = navController)
+                            }
+                        }.onFailure { exception ->
+                            snackBarIsError.value = true
+                            snackBarMessageResource.intValue = 0
+                            snackBarMessage.value = exception.localizedMessage
+                                ?: context.getString(R.string.an_unknown_error_occurred)
+                            scope.launch {
+                                snackBarHostState.showSnackbar("")
+                            }
                         }
                     }
                 }
