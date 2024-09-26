@@ -22,7 +22,7 @@ import com.splicr.app.utils.MediaConfigurationUtil.formatTimestamp
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class SubscriptionViewModel(application: Application) : AndroidViewModel(application),
+class SubscriptionViewModel(private val application: Application) : AndroidViewModel(application),
     PurchasesUpdatedListener {
 
     private lateinit var billingClient: BillingClient
@@ -122,13 +122,37 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
     }
 
     override fun onPurchasesUpdated(billingResult: BillingResult, purchases: List<Purchase>?) {
-        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
-            for (purchase in purchases) {
-                handlePurchase(purchase)
-                purchaseResult.postValue(Result.success(Unit))
+        when (billingResult.responseCode) {
+            BillingClient.BillingResponseCode.OK -> {
+                if (purchases != null) {
+                    for (purchase in purchases) {
+                        handlePurchase(purchase)
+                    }
+                    purchaseResult.postValue(Result.success(Unit))
+                } else {
+                    purchaseResult.postValue(
+                        Result.failure(
+                            Exception(
+                                application.applicationContext.getString(
+                                    R.string.no_purchases_found
+                                )
+                            )
+                        )
+                    )
+                }
             }
-        } else {
-            purchaseResult.postValue(Result.failure(Exception(billingResult.debugMessage)))
+
+            BillingClient.BillingResponseCode.USER_CANCELED -> {
+
+            }
+
+            else -> {
+                purchaseResult.postValue(Result.failure(Exception(billingResult.debugMessage.ifEmpty {
+                    application.applicationContext.getString(
+                        R.string.an_unknown_error_occurred
+                    )
+                })))
+            }
         }
     }
 
