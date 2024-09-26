@@ -66,6 +66,8 @@ import com.splicr.app.ui.components.CustomTopNavigationBar
 import com.splicr.app.ui.components.PrimaryButton
 import com.splicr.app.ui.theme.SplicrTheme
 import com.splicr.app.utils.SharedPreferenceUtil
+import com.splicr.app.utils.SplicrBrainUtil.isInternetAvailable
+import com.splicr.app.viewModel.SubscriptionStatus
 import com.splicr.app.viewModel.SubscriptionViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -109,6 +111,8 @@ fun SubscriptionScreen(
                 val tabs = listOf(R.string.monthly, R.string.yearly)
                 val pagerState = rememberPagerState(pageCount = { tabs.size })
                 val initialLaunch = remember { mutableStateOf(true) }
+                val subscriptionStatus =
+                    subscriptionViewModel.subscriptionStatus.observeAsState(initial = SubscriptionStatus.NONE)
 
                 purchaseResult.let { result ->
                     result.value?.onSuccess {
@@ -116,9 +120,8 @@ fun SubscriptionScreen(
                     }?.onFailure { exception ->
                         snackBarIsError.value = true
                         snackBarMessageResource.intValue = 0
-                        snackBarMessage.value =
-                            exception.localizedMessage
-                                ?: context.getString(R.string.an_unknown_error_occurred)
+                        snackBarMessage.value = exception.localizedMessage
+                            ?: context.getString(R.string.an_unknown_error_occurred)
                         scope.launch {
                             snackBarHostState.showSnackbar(
                                 ""
@@ -340,26 +343,73 @@ fun SubscriptionScreen(
                             end = dimensionResource(id = R.dimen.spacingXl)
                         ), textResource = R.string.Continue
                     ) {
-                        val productDetails =
-                            if (pagerState.currentPage == 0) subscriptionViewModel.monthlyProductDetails.value else subscriptionViewModel.yearlyProductDetails.value
-                        productDetails?.let {
+                        if (!isInternetAvailable(context)) {
+                            snackBarIsError.value = true
+                            snackBarMessageResource.intValue =
+                                R.string.no_internet_connection_please_connect_to_the_internet_and_try_again
+                            snackBarMessage.value = ""
+                            scope.launch {
+                                snackBarHostState.showSnackbar("")
+                            }
+                            return@PrimaryButton
+                        }
+
+                        if (subscriptionStatus.value != SubscriptionStatus.NONE) {
+                            snackBarIsError.value = true
+                            snackBarMessageResource.intValue =
+                                R.string.you_already_have_an_active_subscription
+                            snackBarMessage.value = ""
+                            scope.launch {
+                                snackBarHostState.showSnackbar("")
+                            }
+                            return@PrimaryButton
+                        }
+
+                        val productDetails = if (pagerState.currentPage == 0) {
+                            subscriptionViewModel.monthlyProductDetails.value
+                        } else {
+                            subscriptionViewModel.yearlyProductDetails.value
+                        }
+
+                        val basePlanId = if (pagerState.currentPage == 0) {
+                            if (isChecked.value) {
+                                context.getString(R.string.monthly_basic_with_free_trial)
+                            } else {
+                                context.getString(R.string.monthly_basic)
+                            }
+                        } else {
+                            if (isChecked.value) {
+                                context.getString(R.string.yearly_basic_with_free_trial)
+                            } else {
+                                context.getString(R.string.yearly_basic)
+                            }
+                        }
+
+                        if (productDetails != null) {
                             subscriptionViewModel.startSubscriptionPurchase(
                                 activity = context as Activity,
-                                productDetails = it,
-                                basePlanId = if (pagerState.currentPage == 0) {
-                                    if (isChecked.value) {
-                                        context.getString(R.string.monthly_basic_with_free_trial)
-                                    } else {
-                                        context.getString(R.string.monthly_basic)
-                                    }
-                                } else {
-                                    if (isChecked.value) {
-                                        context.getString(R.string.yearly_basic_with_free_trial)
-                                    } else {
-                                        context.getString(R.string.yearly_basic)
-                                    }
+                                productDetails = productDetails,
+                                basePlanId = basePlanId
+                            ).onSuccess {
+                                goToHomeScreen(navController = navController)
+                            }.onFailure { exception ->
+                                snackBarIsError.value = true
+                                snackBarMessageResource.intValue = 0
+                                snackBarMessage.value = exception.localizedMessage
+                                    ?: context.getString(R.string.subscription_failed_please_try_again)
+                                scope.launch {
+                                    snackBarHostState.showSnackbar("")
                                 }
-                            )
+                            }
+                        } else {
+                            snackBarIsError.value = true
+                            snackBarMessageResource.intValue =
+                                R.string.subscription_options_are_unavailable_please_try_again_later
+                            snackBarMessage.value = ""
+                            scope.launch {
+                                snackBarHostState.showSnackbar("")
+                            }
+                            return@PrimaryButton
                         }
                     }
 
@@ -376,7 +426,32 @@ fun SubscriptionScreen(
                         .clickable(interactionSource = remember {
                             MutableInteractionSource()
                         }, indication = null) {
-                            subscriptionViewModel.restorePurchases()
+                            scope.launch {
+                                subscriptionViewModel
+                                    .restorePurchases(context = context)
+                                    .onSuccess {
+                                        snackBarIsError.value = false
+                                        snackBarMessageResource.intValue =
+                                            R.string.purchase_restored_successfully
+                                        snackBarMessage.value = ""
+                                        scope.launch {
+                                            snackBarHostState.showSnackbar("")
+                                        }
+
+                                        goToHomeScreen(navController = navController)
+                                    }
+                                    .onFailure { exception ->
+                                        snackBarIsError.value = true
+                                        snackBarMessageResource.intValue = 0
+                                        snackBarMessage.value =
+                                            exception.localizedMessage ?: context.getString(
+                                                R.string.failed_to_restore_purchases
+                                            )
+                                        scope.launch {
+                                            snackBarHostState.showSnackbar("")
+                                        }
+                                    }
+                            }
                         },
                         text = stringResource(R.string.restore_purchase),
                         color = MaterialTheme.colorScheme.tertiary,

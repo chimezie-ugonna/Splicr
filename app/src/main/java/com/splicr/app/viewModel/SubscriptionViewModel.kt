@@ -2,10 +2,12 @@ package com.splicr.app.viewModel
 
 import android.app.Activity
 import android.app.Application
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
+import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
@@ -15,7 +17,10 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
+import com.splicr.app.R
 import com.splicr.app.utils.MediaConfigurationUtil.formatTimestamp
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class SubscriptionViewModel(application: Application) : AndroidViewModel(application),
     PurchasesUpdatedListener {
@@ -43,11 +48,13 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
             override fun onBillingSetupFinished(billingResult: BillingResult) {
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     queryProductDetails()
+                } else {
+                    purchaseResult.postValue(Result.failure(Exception("Billing Setup Failed")))
                 }
             }
 
             override fun onBillingServiceDisconnected() {
-                // Retry logic can go here
+                purchaseResult.postValue(Result.failure(Exception("Billing Service Disconnected")))
             }
         })
     }
@@ -64,33 +71,41 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
 
         billingClient.queryProductDetailsAsync(queryProductDetailsParams) { billingResult, productDetailsList ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                // Separate product details by product ID
                 productDetailsList.forEach { productDetails ->
                     when (productDetails.productId) {
                         "monthly_premium" -> monthlyProductDetails.postValue(productDetails)
                         "yearly_premium" -> yearlyProductDetails.postValue(productDetails)
                     }
                 }
+            } else {
+                monthlyProductDetails.postValue(null)
+                yearlyProductDetails.postValue(null)
             }
         }
     }
 
     fun startSubscriptionPurchase(
         activity: Activity, productDetails: ProductDetails, basePlanId: String
-    ) {
+    ): Result<Unit> {
         val offerDetails = productDetails.subscriptionOfferDetails?.find {
             it.basePlanId == basePlanId
         }
 
-        offerDetails?.let {
+        return if (offerDetails != null) {
             val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
-                .setProductDetails(productDetails).setOfferToken(it.offerToken).build()
+                .setProductDetails(productDetails).setOfferToken(offerDetails.offerToken).build()
 
             val billingFlowParams = BillingFlowParams.newBuilder()
                 .setProductDetailsParamsList(listOf(productDetailsParams)).build()
 
-            val result = billingClient.launchBillingFlow(activity, billingFlowParams)
-            // Handle result if needed
+            val billingResult = billingClient.launchBillingFlow(activity, billingFlowParams)
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Purchase failed: ${billingResult.debugMessage}"))
+            }
+        } else {
+            Result.failure(Exception("Offer details not found for basePlanId: $basePlanId"))
         }
     }
 
@@ -101,76 +116,116 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
                 purchaseResult.postValue(Result.success(Unit))
             }
         } else {
-            // Handle failure or user cancellation
             purchaseResult.postValue(Result.failure(Exception(billingResult.debugMessage)))
         }
     }
 
-    private fun handlePurchase(purchase: Purchase) {
+    private fun handlePurchase(purchase: Purchase): Result<Unit> {
         if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
             val productId = purchase.products.firstOrNull()
             val isSubscribed = purchase.isAutoRenewing
 
-            val subscriptionStatus2 = when (productId) {
-                "monthly_premium" -> {
-                    if (isSubscribed) SubscriptionStatus.MONTHLY_SUBSCRIPTION else SubscriptionStatus.NONE
-                }
-
-                "yearly_premium" -> {
-                    if (isSubscribed) SubscriptionStatus.YEARLY_SUBSCRIPTION else SubscriptionStatus.NONE
-                }
-
-                else -> SubscriptionStatus.NONE
-            }
-            subscriptionStatus.postValue(subscriptionStatus2)
-
-            // Check if the purchase includes a free trial
-            val productDetails = productId?.let { it ->
-                billingClient.queryProductDetailsAsync(
-                    QueryProductDetailsParams.newBuilder().setProductList(
-                        listOf(
-                            QueryProductDetailsParams.Product.newBuilder().setProductId(it)
-                                .setProductType(BillingClient.ProductType.SUBS).build()
-                        )
-                    ).build()
-                ) { _, productDetailsList ->
-                    val productDetail = productDetailsList.firstOrNull { it.productId == productId }
-                    val offerDetails = productDetail?.subscriptionOfferDetails?.firstOrNull()
-
-                    val hasFreeTrial =
-                        offerDetails?.offerTags?.contains("monthly-free-trial") == true || offerDetails?.offerTags?.contains(
-                            "yearly-free-trial"
-                        ) == true
-
-                    when {
-                        productId == "monthly_premium" && hasFreeTrial -> {
-                            subscriptionStatus.postValue(SubscriptionStatus.MONTHLY_FREE_TRIAL)
-                        }
-
-                        productId == "yearly_premium" && hasFreeTrial -> {
-                            subscriptionStatus.postValue(SubscriptionStatus.YEARLY_FREE_TRIAL)
-                        }
-
-                        else -> {
-                            // Handle case where there is no free trial
-                            subscriptionStatus.postValue(subscriptionStatus2)
+            return try {
+                // Check if the purchase is acknowledged before proceeding
+                if (!purchase.isAcknowledged) {
+                    val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
+                        .setPurchaseToken(purchase.purchaseToken).build()
+                    billingClient.acknowledgePurchase(acknowledgePurchaseParams) { billingResult ->
+                        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                            updateSubscriptionStatus(productId, isSubscribed, purchase.purchaseTime)
+                        } else {
+                            throw Exception("Failed to acknowledge purchase: ${billingResult.debugMessage}")
                         }
                     }
+                } else {
+                    updateSubscriptionStatus(productId, isSubscribed, purchase.purchaseTime)
                 }
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
             }
-
-            renewalDate.postValue(formatTimestamp(purchase.purchaseTime))
+        } else {
+            return Result.failure(Exception("Purchase state is not PURCHASED"))
         }
     }
 
-    fun restorePurchases() {
-        val queryPurchaseParams =
-            QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build()
+    private fun updateSubscriptionStatus(
+        productId: String?, isSubscribed: Boolean, purchaseTime: Long
+    ) {
+        val subscriptionStatus2 = when (productId) {
+            "monthly_premium" -> {
+                if (isSubscribed) SubscriptionStatus.MONTHLY_SUBSCRIPTION else SubscriptionStatus.NONE
+            }
 
-        billingClient.queryPurchasesAsync(queryPurchaseParams) { billingResult, purchases ->
-            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases.isNotEmpty()) {
-                for (purchase in purchases) {
-                    handlePurchase(purchase)
+            "yearly_premium" -> {
+                if (isSubscribed) SubscriptionStatus.YEARLY_SUBSCRIPTION else SubscriptionStatus.NONE
+            }
+
+            else -> SubscriptionStatus.NONE
+        }
+
+        // Query for offer details (to check if there's a free trial)
+        productId?.let {
+            billingClient.queryProductDetailsAsync(
+                QueryProductDetailsParams.newBuilder().setProductList(
+                    listOf(
+                        QueryProductDetailsParams.Product.newBuilder().setProductId(it)
+                            .setProductType(BillingClient.ProductType.SUBS).build()
+                    )
+                ).build()
+            ) { _, productDetailsList ->
+                val productDetail =
+                    productDetailsList.firstOrNull { productDetails -> productDetails.productId == productId }
+                val hasFreeTrial = productDetail?.subscriptionOfferDetails?.any { offer ->
+                    offer.offerTags.contains("monthly-free-trial") || offer.offerTags.contains("yearly-free-trial")
+                } ?: false
+
+                if (hasFreeTrial) {
+                    val freeTrialStatus = if (productId == "monthly_premium") {
+                        SubscriptionStatus.MONTHLY_FREE_TRIAL
+                    } else {
+                        SubscriptionStatus.YEARLY_FREE_TRIAL
+                    }
+                    subscriptionStatus.postValue(freeTrialStatus)
+                } else {
+                    subscriptionStatus.postValue(subscriptionStatus2)
+                }
+            }
+        }
+
+        // Update renewal date
+        renewalDate.postValue(formatTimestamp(purchaseTime))
+    }
+
+    suspend fun restorePurchases(context: Context): Result<Unit> {
+        return suspendCoroutine { continuation ->
+            val purchaseParams =
+                QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS)
+                    .build()
+
+            billingClient.queryPurchasesAsync(purchaseParams) { billingResult, purchases ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    if (purchases.isEmpty()) {
+                        subscriptionStatus.postValue(SubscriptionStatus.NONE)
+                        continuation.resume(Result.failure(Exception(context.getString(R.string.no_purchases_found))))
+                    } else {
+                        try {
+                            for (purchase in purchases) {
+                                val result = handlePurchase(purchase)
+                                if (result.isFailure) {
+                                    throw result.exceptionOrNull()
+                                        ?: Exception(context.getString(R.string.failed_to_handle_purchase))
+                                }
+                            }
+                            continuation.resume(Result.success(Unit))
+                        } catch (e: Exception) {
+                            continuation.resume(Result.failure(e))
+                        }
+                    }
+                } else {
+                    continuation.resume(
+                        Result.failure(Exception(context.getString(R.string.failed_to_restore_purchases)))
+                    )
                 }
             }
         }
@@ -185,7 +240,7 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
     }
 
     fun handleBillingError(responseCode: Int) {
-        // Implement error handling based on response codes
+        purchaseResult.postValue(Result.failure(Exception("Billing Error: $responseCode")))
     }
 
     override fun onCleared() {
@@ -195,9 +250,5 @@ class SubscriptionViewModel(application: Application) : AndroidViewModel(applica
 }
 
 enum class SubscriptionStatus {
-    NONE,                      // No active subscription
-    MONTHLY_SUBSCRIPTION,      // Monthly subscription
-    YEARLY_SUBSCRIPTION,       // Yearly subscription
-    MONTHLY_FREE_TRIAL,        // Monthly subscription with free trial
-    YEARLY_FREE_TRIAL          // Yearly subscription with free trial
+    NONE, MONTHLY_SUBSCRIPTION, YEARLY_SUBSCRIPTION, MONTHLY_FREE_TRIAL, YEARLY_FREE_TRIAL
 }
