@@ -73,7 +73,10 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     isDarkTheme: MutableState<Boolean> = remember {
         mutableStateOf(false)
-    }, navController: NavHostController, homeViewModel: HomeViewModel = viewModel()
+    },
+    navController: NavHostController,
+    homeViewModel: HomeViewModel = viewModel(),
+    purchasesRestored: Boolean = false
 ) {
     SplicrTheme(darkTheme = isDarkTheme.value) {
         Surface(
@@ -125,6 +128,19 @@ fun HomeScreen(
                             navController.navigate("SettingsScreen")
                         })
 
+                    val hasShownSnackbar = rememberSaveable { mutableStateOf(false) }
+                    LaunchedEffect(purchasesRestored) {
+                        if (purchasesRestored && !hasShownSnackbar.value) {
+                            snackBarIsError.value = false
+                            snackBarMessageResource.intValue = R.string.purchase_restored_successfully
+                            snackBarMessage.value = ""
+                            scope.launch {
+                                snackBarHostState.showSnackbar("")
+                            }
+                            hasShownSnackbar.value = true
+                        }
+                    }
+
                     Text(
                         text = stringResource(R.string.my_canvas),
                         modifier = Modifier
@@ -151,7 +167,8 @@ fun HomeScreen(
 
                     showLoaderBottomSheet.value = homeViewModel.isDeleting
 
-                    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true,
+                    val sheetState = rememberModalBottomSheetState(
+                        skipPartiallyExpanded = true,
                         confirmValueChange = { false })
 
                     CustomBottomSheet(

@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,12 +55,11 @@ import com.splicr.app.ui.components.customModifier
 import com.splicr.app.ui.theme.SplicrTheme
 import com.splicr.app.viewModel.HomeViewModel
 import com.splicr.app.viewModel.SettingsViewModel
+import com.splicr.app.viewModel.SubscriptionStatus
+import com.splicr.app.viewModel.SubscriptionViewModel
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.threeten.bp.LocalDate
-import org.threeten.bp.format.DateTimeFormatter
-import java.util.Locale
 
 @Composable
 fun SettingsScreen(
@@ -68,7 +68,8 @@ fun SettingsScreen(
     },
     navController: NavHostController,
     settingsViewModel: SettingsViewModel = viewModel(),
-    homeViewModel: HomeViewModel = viewModel()
+    homeViewModel: HomeViewModel = viewModel(),
+    subscriptionViewModel: SubscriptionViewModel = viewModel()
 ) {
     SplicrTheme(darkTheme = isDarkTheme.value) {
         Surface(
@@ -128,8 +129,7 @@ fun SettingsScreen(
                         mutableStateOf(false)
                     }
 
-                    val sheetState = rememberModalBottomSheetState(
-                        skipPartiallyExpanded = true,
+                    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true,
                         confirmValueChange = { false })
 
                     val showLoaderBottomSheet = rememberSaveable {
@@ -147,6 +147,11 @@ fun SettingsScreen(
                     val showLoader = rememberSaveable {
                         mutableStateOf(false)
                     }
+
+                    val subscriptionStatus =
+                        subscriptionViewModel.subscriptionStatus.observeAsState(initial = SubscriptionStatus.NONE)
+                    val subscriptionRenewalDate =
+                        subscriptionViewModel.renewalDate.observeAsState(initial = null)
 
                     LaunchedEffect(showLoader.value) {
                         if (showLoader.value) {
@@ -236,20 +241,35 @@ fun SettingsScreen(
                         }
                     }
 
-                    val today = LocalDate.now()
-                    val dateInSevenDays = today.plusDays(7)
-                    val formatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy", Locale.ENGLISH)
-                    val dueDate = dateInSevenDays.format(formatter)
+                    val subscriptionStatusDisplayStringResource =
+                        rememberSaveable { mutableIntStateOf(0) }
 
-                    val subscriptionRenewalText = stringResource(
-                        R.string.auto_renewal, dueDate
-                    )
+
+                    subscriptionStatusDisplayStringResource.intValue =
+                        when (subscriptionStatus.value) {
+                            SubscriptionStatus.NONE -> {
+                                R.string.no_active_subscription
+                            }
+
+                            SubscriptionStatus.MONTHLY_SUBSCRIPTION -> {
+                                R.string.monthly_premium
+                            }
+
+                            SubscriptionStatus.YEARLY_SUBSCRIPTION -> {
+                                R.string.yearly_premium
+                            }
+
+                            else -> {
+                                R.string.free_trial
+                            }
+                        }
+
                     val subscriptionListItem = remember {
                         mutableStateOf(
                             listOf(
                                 ListItemData(
-                                    titleResource = R.string.free_trial,
-                                    subText = subscriptionRenewalText,
+                                    titleResource = subscriptionStatusDisplayStringResource.intValue,
+                                    subText = subscriptionRenewalDate.value,
                                     showArrow = false
                                 ), ListItemData(
                                     titleResource = R.string.manage_subscription,

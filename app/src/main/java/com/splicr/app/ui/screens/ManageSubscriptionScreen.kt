@@ -1,5 +1,6 @@
 package com.splicr.app.ui.screens
 
+import android.app.Activity
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -35,11 +36,13 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -93,13 +96,14 @@ fun ManageSubscriptionScreen(
                     mutableStateOf(true)
                 }
 
+                val context = LocalContext.current
                 val view = LocalView.current
                 val tabs = listOf(R.string.monthly, R.string.yearly)
                 val pagerState = rememberPagerState(pageCount = { tabs.size })
                 val initialLaunch = remember { mutableStateOf(true) }
                 val subscriptionStatus =
                     subscriptionViewModel.subscriptionStatus.observeAsState(initial = SubscriptionStatus.NONE)
-                val currentPlan = remember {
+                val currentPlan = rememberSaveable {
                     mutableStateOf(false)
                 }
                 if (subscriptionStatus.value != SubscriptionStatus.NONE) {
@@ -251,8 +255,35 @@ fun ManageSubscriptionScreen(
                             textResource = if (subscriptionStatus.value != SubscriptionStatus.NONE) if (currentPlan.value) R.string.cancel_plan else R.string.change_plan else R.string.get_plan,
                             uiEnabled = !currentPlan.value
                         ) {
-
-
+                            if (subscriptionStatus.value != SubscriptionStatus.NONE) {
+                                if (currentPlan.value) {
+                                    subscriptionViewModel.cancelSubscription(activity = context as Activity)
+                                } else {
+                                    subscribe(
+                                        context = context,
+                                        pagerState = pagerState,
+                                        scope = scope,
+                                        snackBarHostState = snackBarHostState,
+                                        snackBarIsError = snackBarIsError,
+                                        snackBarMessage = snackBarMessage,
+                                        snackBarMessageResource = snackBarMessageResource,
+                                        subscriptionViewModel = subscriptionViewModel,
+                                        freeTrialEnabled = true
+                                    )
+                                }
+                            } else {
+                                subscribe(
+                                    context = context,
+                                    pagerState = pagerState,
+                                    scope = scope,
+                                    snackBarHostState = snackBarHostState,
+                                    snackBarIsError = snackBarIsError,
+                                    snackBarMessage = snackBarMessage,
+                                    snackBarMessageResource = snackBarMessageResource,
+                                    subscriptionViewModel = subscriptionViewModel,
+                                    freeTrialEnabled = true
+                                )
+                            }
                         }
 
                         Text(
@@ -262,15 +293,27 @@ fun ManageSubscriptionScreen(
                                 .padding(
                                     top = dimensionResource(id = R.dimen.spacingSm)
                                 ),
-                            text = if (pagerState.currentPage == 0) stringResource(
-                                R.string._7_days_free_trial_and_then, stringResource(
-                                    id = R.string._2_500_mth
+                            text = if (subscriptionStatus.value != SubscriptionStatus.NONE) {
+                                if (pagerState.currentPage == 0) stringResource(
+                                    R.string.auto_renews_at, stringResource(
+                                        id = R.string._2_500_mth
+                                    )
+                                ) else stringResource(
+                                    R.string.auto_renews_at, stringResource(
+                                        id = R.string._27_000_yr
+                                    )
                                 )
-                            ) else stringResource(
-                                R.string._7_days_free_trial_and_then, stringResource(
-                                    id = R.string._27_000_yr
+                            } else {
+                                if (pagerState.currentPage == 0) stringResource(
+                                    R.string._7_days_free_trial_and_then, stringResource(
+                                        id = R.string._2_500_mth
+                                    )
+                                ) else stringResource(
+                                    R.string._7_days_free_trial_and_then, stringResource(
+                                        id = R.string._27_000_yr
+                                    )
                                 )
-                            ),
+                            },
                             color = MaterialTheme.colorScheme.onBackground,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Normal,
