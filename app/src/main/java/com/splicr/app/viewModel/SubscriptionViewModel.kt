@@ -19,6 +19,7 @@ import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.splicr.app.R
 import com.splicr.app.utils.MediaConfigurationUtil.formatTimestamp
+import com.splicr.app.utils.SplicrBrainUtil.isInternetAvailable
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -27,7 +28,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
 
     private lateinit var billingClient: BillingClient
     val subscriptionStatus = MutableLiveData<SubscriptionStatus>()
-    private val renewalDate = MutableLiveData<String?>()
+    val renewalDate = MutableLiveData<String?>()
     val purchaseResult = MutableLiveData<Result<Unit>>()
     val monthlyProductDetails = MutableLiveData<ProductDetails?>()
     val yearlyProductDetails = MutableLiveData<ProductDetails?>()
@@ -36,6 +37,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
         setupBillingClient()
     }
 
+    @Suppress("DEPRECATION")
     private fun setupBillingClient() {
         billingClient =
             BillingClient.newBuilder(getApplication()).setListener(this).enablePendingPurchases()
@@ -87,6 +89,26 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
     fun startSubscriptionPurchase(
         activity: Activity, productDetails: ProductDetails, basePlanId: String
     ): Result<Unit> {
+        if (!isInternetAvailable(activity)) {
+            return Result.failure(
+                Exception(
+                    activity.getString(
+                        R.string.no_internet_connection_please_connect_to_the_internet_and_try_again
+                    )
+                )
+            )
+        }
+
+        if (subscriptionStatus.value != SubscriptionStatus.NONE) {
+            return Result.failure(
+                Exception(
+                    activity.getString(
+                        R.string.you_already_have_an_active_subscription
+                    )
+                )
+            )
+        }
+
         val offerDetails = productDetails.subscriptionOfferDetails?.find {
             it.basePlanId == basePlanId
         }
@@ -124,11 +146,24 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
     override fun onPurchasesUpdated(billingResult: BillingResult, purchases: List<Purchase>?) {
         when (billingResult.responseCode) {
             BillingClient.BillingResponseCode.OK -> {
-                if (purchases != null) {
+                if (!purchases.isNullOrEmpty()) {
+                    var allSuccessful = true
                     for (purchase in purchases) {
-                        handlePurchase(purchase)
+                        val result = handlePurchase(purchase)
+                        if (result.isFailure) {
+                            allSuccessful = false
+                            purchaseResult.postValue(
+                                Result.failure(
+                                    result.exceptionOrNull()
+                                        ?: Exception(application.applicationContext.getString(R.string.an_unknown_error_occurred))
+                                )
+                            )
+                        }
                     }
-                    purchaseResult.postValue(Result.success(Unit))
+
+                    if (allSuccessful) {
+                        purchaseResult.postValue(Result.success(Unit))
+                    }
                 } else {
                     purchaseResult.postValue(
                         Result.failure(
@@ -229,8 +264,19 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
             }
         }
 
-        // Update renewal date
-        renewalDate.postValue(formatTimestamp(purchaseTime))
+        renewalDate.postValue(
+            when {
+                isSubscribed -> application.applicationContext.getString(
+                    R.string.auto_renewal, formatTimestamp(purchaseTime)
+                )
+
+                !isSubscribed && productId != null -> application.applicationContext.getString(
+                    R.string.expiring, formatTimestamp(purchaseTime)
+                )
+
+                else -> null
+            }
+        )
     }
 
     suspend fun restorePurchases(context: Context): Result<Unit> {
@@ -273,10 +319,6 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
             setPackage("com.android.vending")
         }
         activity.startActivity(intent)
-    }
-
-    fun handleBillingError(responseCode: Int) {
-        purchaseResult.postValue(Result.failure(Exception("Billing Error: $responseCode")))
     }
 
     override fun onCleared() {

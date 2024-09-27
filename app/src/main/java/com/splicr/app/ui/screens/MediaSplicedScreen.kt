@@ -163,7 +163,7 @@ fun MediaSplicedScreen(
                         endStringResource = R.string.done,
                         endOnClick = {
                             navController.popBackStack(
-                                route = "HomeScreen", inclusive = false
+                                route = "HomeScreen/${false}", inclusive = false
                             )
                         })
 

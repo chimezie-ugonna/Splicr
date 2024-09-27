@@ -42,7 +42,7 @@ import com.splicr.app.viewModel.SubscriptionViewModel
 fun Navigation(
     navController: NavHostController = rememberNavController(),
     startDestination: String = if (SharedPreferenceUtil.atHomeScreen()) {
-        "HomeScreen"
+        "HomeScreen/${false}"
     } else if (SharedPreferenceUtil.onboarded()) {
         "SubscriptionScreen"
     } else {
@@ -75,8 +75,7 @@ fun Navigation(
     }) {
         composable(route = "OnboardingScreen") {
             OnboardingScreen(
-                isDarkTheme = isDarkTheme,
-                navController = navController
+                isDarkTheme = isDarkTheme, navController = navController
             )
         }
         composable(route = "SubscriptionScreen") {
@@ -89,13 +88,20 @@ fun Navigation(
                 subscriptionViewModel = subscriptionViewModel
             )
         }
-        composable(route = "HomeScreen") {
+        composable(
+            route = "HomeScreen/{purchasesRestored}",
+            arguments = listOf(navArgument("purchasesRestored") {
+                type = NavType.BoolType
+            })
+        ) {
+            val purchasesRestored = it.arguments?.getBoolean("purchasesRestored") ?: false
             BackHandler(enabled = true) {
                 (context as Activity).moveTaskToBack(true)
             }
             HomeScreen(
                 isDarkTheme = isDarkTheme,
                 navController = navController,
+                purchasesRestored = purchasesRestored,
                 homeViewModel = homeViewModel
             )
         }
@@ -104,7 +110,8 @@ fun Navigation(
                 isDarkTheme = isDarkTheme,
                 navController = navController,
                 settingsViewModel = viewModel(),
-                homeViewModel = homeViewModel
+                homeViewModel = homeViewModel,
+                subscriptionViewModel = subscriptionViewModel
             )
         }
         composable(route = "SignInScreen") {

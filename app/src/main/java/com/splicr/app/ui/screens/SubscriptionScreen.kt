@@ -1,6 +1,7 @@
 package com.splicr.app.ui.screens
 
 import android.app.Activity
+import android.content.Context
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -33,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
@@ -66,9 +69,8 @@ import com.splicr.app.ui.components.CustomTopNavigationBar
 import com.splicr.app.ui.components.PrimaryButton
 import com.splicr.app.ui.theme.SplicrTheme
 import com.splicr.app.utils.SharedPreferenceUtil
-import com.splicr.app.utils.SplicrBrainUtil.isInternetAvailable
-import com.splicr.app.viewModel.SubscriptionStatus
 import com.splicr.app.viewModel.SubscriptionViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.threeten.bp.LocalDate
@@ -110,21 +112,18 @@ fun SubscriptionScreen(
                 val tabs = listOf(R.string.monthly, R.string.yearly)
                 val pagerState = rememberPagerState(pageCount = { tabs.size })
                 val initialLaunch = remember { mutableStateOf(true) }
-                val subscriptionStatus =
-                    subscriptionViewModel.subscriptionStatus.observeAsState(initial = SubscriptionStatus.NONE)
 
                 val purchaseResult = subscriptionViewModel.purchaseResult.observeAsState()
                 LaunchedEffect(purchaseResult.value) {
                     purchaseResult.value?.let { result ->
                         result.onSuccess {
-                            if (subscriptionStatus.value != SubscriptionStatus.NONE) {
-                                goToHomeScreen(navController = navController)
-                            }
+                            goToHomeScreen(navController = navController)
                         }.onFailure { exception ->
                             snackBarIsError.value = true
                             snackBarMessageResource.intValue = 0
-                            snackBarMessage.value = exception.localizedMessage
-                                ?: context.getString(R.string.an_unknown_error_occurred)
+                            snackBarMessage.value = exception.localizedMessage ?: context.getString(
+                                R.string.an_unknown_error_occurred
+                            )
                             scope.launch {
                                 snackBarHostState.showSnackbar("")
                             }
@@ -345,72 +344,17 @@ fun SubscriptionScreen(
                             end = dimensionResource(id = R.dimen.spacingXl)
                         ), textResource = R.string.Continue
                     ) {
-                        if (!isInternetAvailable(context)) {
-                            snackBarIsError.value = true
-                            snackBarMessageResource.intValue =
-                                R.string.no_internet_connection_please_connect_to_the_internet_and_try_again
-                            snackBarMessage.value = ""
-                            scope.launch {
-                                snackBarHostState.showSnackbar("")
-                            }
-                            return@PrimaryButton
-                        }
-
-                        if (subscriptionStatus.value != SubscriptionStatus.NONE) {
-                            snackBarIsError.value = true
-                            snackBarMessageResource.intValue =
-                                R.string.you_already_have_an_active_subscription
-                            snackBarMessage.value = ""
-                            scope.launch {
-                                snackBarHostState.showSnackbar("")
-                            }
-                            return@PrimaryButton
-                        }
-
-                        val productDetails = if (pagerState.currentPage == 0) {
-                            subscriptionViewModel.monthlyProductDetails.value
-                        } else {
-                            subscriptionViewModel.yearlyProductDetails.value
-                        }
-
-                        val basePlanId = if (pagerState.currentPage == 0) {
-                            if (isChecked.value) {
-                                context.getString(R.string.monthly_basic_with_free_trial)
-                            } else {
-                                context.getString(R.string.monthly_basic)
-                            }
-                        } else {
-                            if (isChecked.value) {
-                                context.getString(R.string.yearly_basic_with_free_trial)
-                            } else {
-                                context.getString(R.string.yearly_basic)
-                            }
-                        }
-
-                        if (productDetails != null) {
-                            subscriptionViewModel.startSubscriptionPurchase(
-                                activity = context as Activity,
-                                productDetails = productDetails,
-                                basePlanId = basePlanId
-                            ).onFailure { exception ->
-                                snackBarIsError.value = true
-                                snackBarMessageResource.intValue = 0
-                                snackBarMessage.value = exception.localizedMessage
-                                    ?: context.getString(R.string.subscription_failed_please_try_again)
-                                scope.launch {
-                                    snackBarHostState.showSnackbar("")
-                                }
-                            }
-                        } else {
-                            snackBarIsError.value = true
-                            snackBarMessageResource.intValue =
-                                R.string.subscription_options_are_unavailable_please_try_again_later
-                            snackBarMessage.value = ""
-                            scope.launch {
-                                snackBarHostState.showSnackbar("")
-                            }
-                            return@PrimaryButton
-                        }
+                        subscribe(
+                            context = context,
+                            pagerState = pagerState,
+                            scope = scope,
+                            snackBarHostState = snackBarHostState,
+                            snackBarIsError = snackBarIsError,
+                            snackBarMessage = snackBarMessage,
+                            snackBarMessageResource = snackBarMessageResource,
+                            subscriptionViewModel = subscriptionViewModel,
+                            freeTrialEnabled = isChecked.value
+                        )
                     }
 
                     Spacer(modifier = Modifier.padding(vertical = dimensionResource(id = R.dimen.spacingMd)))
@@ -430,15 +374,10 @@ fun SubscriptionScreen(
                                 subscriptionViewModel
                                     .restorePurchases(context = context)
                                     .onSuccess {
-                                        snackBarIsError.value = false
-                                        snackBarMessageResource.intValue =
-                                            R.string.purchase_restored_successfully
-                                        snackBarMessage.value = ""
-                                        scope.launch {
-                                            snackBarHostState.showSnackbar("")
-                                        }
-
-                                        goToHomeScreen(navController = navController)
+                                        goToHomeScreen(
+                                            navController = navController,
+                                            purchasesRestored = true
+                                        )
                                     }
                                     .onFailure { exception ->
                                         snackBarIsError.value = true
@@ -479,8 +418,62 @@ fun SubscriptionScreen(
 
 }
 
-fun goToHomeScreen(navController: NavController) {
-    navController.navigate("HomeScreen")
+fun subscribe(
+    context: Context,
+    pagerState: PagerState,
+    freeTrialEnabled: Boolean,
+    subscriptionViewModel: SubscriptionViewModel,
+    snackBarIsError: MutableState<Boolean>,
+    snackBarMessageResource: MutableIntState,
+    snackBarMessage: MutableState<String>,
+    scope: CoroutineScope,
+    snackBarHostState: SnackbarHostState
+) {
+    val productDetails = if (pagerState.currentPage == 0) {
+        subscriptionViewModel.monthlyProductDetails.value
+    } else {
+        subscriptionViewModel.yearlyProductDetails.value
+    }
+
+    val basePlanId = if (pagerState.currentPage == 0) {
+        if (freeTrialEnabled) {
+            context.getString(R.string.monthly_basic_with_free_trial)
+        } else {
+            context.getString(R.string.monthly_basic)
+        }
+    } else {
+        if (freeTrialEnabled) {
+            context.getString(R.string.yearly_basic_with_free_trial)
+        } else {
+            context.getString(R.string.yearly_basic)
+        }
+    }
+
+    if (productDetails != null) {
+        subscriptionViewModel.startSubscriptionPurchase(
+            activity = context as Activity, productDetails = productDetails, basePlanId = basePlanId
+        ).onFailure { exception ->
+            snackBarIsError.value = true
+            snackBarMessageResource.intValue = 0
+            snackBarMessage.value = exception.localizedMessage
+                ?: context.getString(R.string.subscription_failed_please_try_again)
+            scope.launch {
+                snackBarHostState.showSnackbar("")
+            }
+        }
+    } else {
+        snackBarIsError.value = true
+        snackBarMessageResource.intValue =
+            R.string.subscription_options_are_unavailable_please_try_again_later
+        snackBarMessage.value = ""
+        scope.launch {
+            snackBarHostState.showSnackbar("")
+        }
+    }
+}
+
+fun goToHomeScreen(navController: NavController, purchasesRestored: Boolean = false) {
+    navController.navigate("HomeScreen/$purchasesRestored")
     SharedPreferenceUtil.atHomeScreen(true)
 }
 

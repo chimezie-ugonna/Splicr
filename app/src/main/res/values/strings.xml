@@ -33,6 +33,7 @@
     <string name="create_an_account_or_sign_in">Create an account or sign in</string>
     <string name="free_trial">Free Trial</string>
     <string name="auto_renewal">Auto-renewal: %1$s</string>
+    <string name="expiring">Expiring: %1$s</string>
     <string name="manage_subscription">Manage Subscription</string>
     <string name="faqs">FAQs</string>
     <string name="contact_support">Contact Support</string>
@@ -56,6 +57,7 @@
     <string name="change_plan">Change plan</string>
     <string name="cancel_plan">Cancel plan</string>
     <string name="_7_days_free_trial_and_then">7 days free trial and then %1$s</string>
+    <string name="auto_renews_at">Auto-renews at %1$s</string>
     <string name="what_you_get">What you get</string>
     <string name="lorem_ipsum_dolor_sit_amet_consectetur">Lorem ipsum dolor sit amet consectetur Lorem ipsum dolor sit amet consectetur Lorem ipsum dolor sit amet consectetur</string>
     <string name="close">Close</string>
@@ -191,5 +193,8 @@
     <string name="purchase_restored_successfully">Purchase restored successfully</string>
     <string name="purchase_failed">Purchase failed: %1$s</string>
     <string name="offer_details_not_found_for_baseplanid">Offer details not found for basePlanId: %1$s</string>
+    <string name="no_active_subscription">No active subscription</string>
+    <string name="monthly_premium">Monthly Premium</string>
+    <string name="yearly_premium">Yearly Premium</string>
 
 </resources>
