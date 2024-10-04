@@ -56,6 +56,7 @@ import com.splicr.app.ui.theme.SplicrTheme
 import com.splicr.app.viewModel.ResetPasswordViewModel
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResetPasswordScreen(
     isDarkTheme: MutableState<Boolean> = remember {
@@ -193,7 +194,7 @@ fun ResetPasswordScreen(
                                             snackBarMessageResource.intValue = 0
                                             snackBarMessage.value = task.exception?.localizedMessage
                                                 ?: context.getString(
-                                                    R.string.an_unknown_error_occurred
+                                                    R.string.an_unexpected_error_occurred
                                                 )
                                             scope.launch { snackBarHostState.showSnackbar("") }
                                         }

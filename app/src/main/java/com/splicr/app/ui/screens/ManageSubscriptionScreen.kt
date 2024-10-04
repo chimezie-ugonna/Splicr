@@ -327,7 +327,12 @@ fun ManageSubscriptionScreen(
                     isError = snackBarIsError.value,
                     message = snackBarMessage.value,
                     snackBarHostState = snackBarHostState,
-                    modifier = Modifier.align(Alignment.TopCenter)
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(
+                            start = dimensionResource(id = R.dimen.spacingXl),
+                            end = dimensionResource(id = R.dimen.spacingXl)
+                        )
                 )
             }
 

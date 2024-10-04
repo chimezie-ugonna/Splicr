@@ -53,6 +53,7 @@ import com.splicr.app.ui.components.CustomSnackBar
 import com.splicr.app.ui.components.CustomTopNavigationBar
 import com.splicr.app.ui.components.customModifier
 import com.splicr.app.ui.theme.SplicrTheme
+import com.splicr.app.utils.FirestoreQueryUtil.deleteUserDataAndAccount
 import com.splicr.app.viewModel.HomeViewModel
 import com.splicr.app.viewModel.SettingsViewModel
 import com.splicr.app.viewModel.SubscriptionStatus
@@ -321,7 +322,7 @@ fun SettingsScreen(
                                                             snackBarMessageResource.intValue = 0
                                                             snackBarMessage.value =
                                                                 task2.exception?.localizedMessage
-                                                                    ?: context.getString(R.string.an_unknown_error_occurred)
+                                                                    ?: context.getString(R.string.an_unexpected_error_occurred)
                                                         }
                                                         scope.launch {
                                                             snackBarHostState.showSnackbar(
@@ -332,7 +333,7 @@ fun SettingsScreen(
                                             } else {
                                                 snackBarIsError.value = true
                                                 snackBarMessageResource.intValue =
-                                                    R.string.an_unknown_error_occurred
+                                                    R.string.no_account_signed_in
                                                 snackBarMessage.value = ""
                                                 scope.launch { snackBarHostState.showSnackbar("") }
                                             }
@@ -350,11 +351,50 @@ fun SettingsScreen(
                                                             ClearCredentialStateRequest()
                                                         )
                                                 }
+                                            } else {
+                                                snackBarIsError.value = true
+                                                snackBarMessageResource.intValue =
+                                                    R.string.no_account_signed_in
+                                                snackBarMessage.value = ""
+                                                scope.launch { snackBarHostState.showSnackbar("") }
                                             }
                                         }
 
                                         else -> {
-
+                                            label.intValue = R.string.deleting_account
+                                            loaderDescription.intValue =
+                                                R.string.deleting_your_account_this_may_take_a_moment
+                                            showLoaderBottomSheet.value = true
+                                            scope.launch {
+                                                deleteUserDataAndAccount(context = context)
+                                                    .onSuccess {
+                                                        auth.signOut()
+                                                        homeViewModel.stopListening()
+                                                        CredentialManager
+                                                            .create(context = context)
+                                                            .clearCredentialState(
+                                                                ClearCredentialStateRequest()
+                                                            )
+                                                        showLoaderBottomSheet.value = false
+                                                        snackBarIsError.value = false
+                                                        snackBarMessageResource.intValue =
+                                                            R.string.account_deleted_successfully
+                                                        snackBarMessage.value = ""
+                                                        snackBarHostState.showSnackbar(
+                                                            ""
+                                                        )
+                                                    }
+                                                    .onFailure {
+                                                        showLoaderBottomSheet.value = false
+                                                        snackBarIsError.value = true
+                                                        snackBarMessageResource.intValue = 0
+                                                        snackBarMessage.value =
+                                                            it.localizedMessage ?: context.getString(
+                                                                R.string.an_unexpected_error_occurred
+                                                            )
+                                                        snackBarHostState.showSnackbar("")
+                                                    }
+                                            }
                                         }
                                     }
                                 } else Modifier.customModifier(
