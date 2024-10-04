@@ -46,7 +46,7 @@
     <string name="please_enter_a_valid_email_address">Please enter a valid email address</string>
     <string name="please_enter_a_minimum_of_8_characters">Please enter a minimum of 8 characters</string>
     <string name="forgot_your_password">Forgot your password?</string>
-    <string name="an_unknown_error_occurred">An unknown error occurred</string>
+    <string name="an_unexpected_error_occurred">An unexpected error occurred</string>
     <string name="verify_email">Verify Email</string>
     <string name="sign_out">Sign Out</string>
     <string name="password_reset_link_sent_successfully">Password reset link sent successfully</string>
@@ -145,6 +145,7 @@
     <string name="no_faqs_available">No FAQs available</string>
     <string name="deleting_item">Deleting Item</string>
     <string name="deleting_your_item_this_may_take_a_moment">Deleting your item. This may take a moment.</string>
+    <string name="deleting_your_account_this_may_take_a_moment">Deleting your account. This may take a moment.</string>
     <string name="sign_in">Sign in</string>
     <string name="to_view_and_manage_your_projects_projects_created_while_not_signed_in_won_t_be_saved_to_your_account">" to view and manage your projects. Projects created while not signed in won't be saved to your account."</string>
     <string name="sending_feedback">Sending Feedback</string>
@@ -196,5 +197,12 @@
     <string name="no_active_subscription">No active subscription</string>
     <string name="monthly_premium">Monthly Premium</string>
     <string name="yearly_premium">Yearly Premium</string>
+    <string name="deleting_account">Deleting Account</string>
+    <string name="account_deleted_successfully">Account deleted successfully</string>
+    <string name="no_account_signed_in">No account signed in</string>
+    <string name="billing_setup_failed">Billing Setup Failed</string>
+    <string name="billing_service_disconnected">Billing Service Disconnected</string>
+    <string name="failed_to_acknowledge_purchase">Failed to acknowledge purchase: %1$s</string>
+    <string name="purchase_state_is_not_purchased">Purchase state is not PURCHASED</string>
 
 </resources>

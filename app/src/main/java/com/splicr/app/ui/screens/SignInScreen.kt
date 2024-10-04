@@ -246,7 +246,7 @@ fun SignInScreen(
                                                 snackBarMessageResource.intValue = 0
                                                 snackBarMessage.value =
                                                     createUserTask.exception?.localizedMessage
-                                                        ?: context.getString(R.string.an_unknown_error_occurred)
+                                                        ?: context.getString(R.string.an_unexpected_error_occurred)
                                                 scope.launch {
                                                     snackBarHostState.showSnackbar(
                                                         ""

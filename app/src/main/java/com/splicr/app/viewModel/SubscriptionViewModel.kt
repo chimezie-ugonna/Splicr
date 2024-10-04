@@ -20,6 +20,7 @@ import com.android.billingclient.api.QueryPurchasesParams
 import com.splicr.app.R
 import com.splicr.app.utils.MediaConfigurationUtil.formatTimestamp
 import com.splicr.app.utils.SplicrBrainUtil.isInternetAvailable
+import java.util.Calendar
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -51,12 +52,12 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     queryProductDetails()
                 } else {
-                    purchaseResult.postValue(Result.failure(Exception("Billing Setup Failed")))
+                    purchaseResult.postValue(Result.failure(Exception(application.getString(R.string.billing_setup_failed))))
                 }
             }
 
             override fun onBillingServiceDisconnected() {
-                purchaseResult.postValue(Result.failure(Exception("Billing Service Disconnected")))
+                purchaseResult.postValue(Result.failure(Exception(application.getString(R.string.billing_service_disconnected))))
             }
         })
     }
@@ -155,7 +156,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
                             purchaseResult.postValue(
                                 Result.failure(
                                     result.exceptionOrNull()
-                                        ?: Exception(application.applicationContext.getString(R.string.an_unknown_error_occurred))
+                                        ?: Exception(application.applicationContext.getString(R.string.an_unexpected_error_occurred))
                                 )
                             )
                         }
@@ -184,7 +185,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
             else -> {
                 purchaseResult.postValue(Result.failure(Exception(billingResult.debugMessage.ifEmpty {
                     application.applicationContext.getString(
-                        R.string.an_unknown_error_occurred
+                        R.string.an_unexpected_error_occurred
                     )
                 })))
             }
@@ -205,7 +206,12 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             updateSubscriptionStatus(productId, isSubscribed, purchase.purchaseTime)
                         } else {
-                            throw Exception("Failed to acknowledge purchase: ${billingResult.debugMessage}")
+                            throw Exception(
+                                application.getString(
+                                    R.string.failed_to_acknowledge_purchase,
+                                    billingResult.debugMessage
+                                )
+                            )
                         }
                     }
                 } else {
@@ -216,7 +222,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
                 Result.failure(e)
             }
         } else {
-            return Result.failure(Exception("Purchase state is not PURCHASED"))
+            return Result.failure(Exception(application.getString(R.string.purchase_state_is_not_purchased)))
         }
     }
 
@@ -264,14 +270,59 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
             }
         }
 
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = purchaseTime
+        }
+
+        // Calculate the renewal date based on subscription type
+        val autoRenewalDate = if (isSubscribed) {
+            when (productId) {
+                "monthly_premium" -> {
+                    calendar.add(Calendar.MONTH, 1)
+                    calendar.time
+                }
+
+                "yearly_premium" -> {
+                    calendar.add(Calendar.YEAR, 1)
+                    calendar.time
+                }
+
+                else -> null
+            }
+        } else {
+            null
+        }
+
+        // Reset calendar for calculating the expiry date
+        calendar.timeInMillis = purchaseTime
+
+        val expiryDate = if (!isSubscribed && productId != null) {
+            when (productId) {
+                "monthly_premium" -> {
+                    calendar.add(Calendar.MONTH, 1)
+                    calendar.time
+                }
+
+                "yearly_premium" -> {
+                    calendar.add(Calendar.YEAR, 1)
+                    calendar.time
+                }
+
+                else -> null
+            }
+        } else {
+            null
+        }
+
+        // Update the renewal date message
         renewalDate.postValue(
             when {
-                isSubscribed -> application.applicationContext.getString(
-                    R.string.auto_renewal, formatTimestamp(purchaseTime)
+                autoRenewalDate != null -> application.applicationContext.getString(
+                    R.string.auto_renewal, formatTimestamp(autoRenewalDate.time)
                 )
 
-                !isSubscribed && productId != null -> application.applicationContext.getString(
-                    R.string.expiring, formatTimestamp(purchaseTime)
+                expiryDate != null -> application.applicationContext.getString(
+                    R.string.expiring, formatTimestamp(expiryDate.time)
                 )
 
                 else -> null

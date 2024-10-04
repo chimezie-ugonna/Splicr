@@ -71,17 +71,17 @@ object AuthenticationUtil {
                     Log.e(
                         "AuthenticationErrorMessage",
                         e.localizedMessage?.toString()
-                            ?: context.getString(R.string.an_unknown_error_occurred)
+                            ?: context.getString(R.string.an_unexpected_error_occurred)
                     )
                     onAuthenticationFailure(
                         e.localizedMessage?.toString()
-                            ?: context.getString(R.string.an_unknown_error_occurred), -1
+                            ?: context.getString(R.string.an_unexpected_error_occurred), -1
                     )
                 }
             } catch (e: Exception) {
                 onAuthenticationFailure(
                     e.localizedMessage?.toString()
-                        ?: context.getString(R.string.an_unknown_error_occurred), 0
+                        ?: context.getString(R.string.an_unexpected_error_occurred), 0
                 )
             }
         }
@@ -110,14 +110,14 @@ object AuthenticationUtil {
                             } else {
                                 onAuthenticationFailure(
                                     task.exception?.localizedMessage?.toString()
-                                        ?: context.getString(R.string.an_unknown_error_occurred), 0
+                                        ?: context.getString(R.string.an_unexpected_error_occurred), 0
                                 )
                             }
                         }
                     } catch (e: GoogleIdTokenParsingException) {
                         onAuthenticationFailure(
                             e.localizedMessage?.toString() ?: context.getString(
-                                R.string.an_unknown_error_occurred
+                                R.string.an_unexpected_error_occurred
                             ), 0
                         )
                     }
@@ -148,7 +148,7 @@ object AuthenticationUtil {
             }.addOnFailureListener {
                 onAuthenticationFailure(
                     it.localizedMessage?.toString()
-                        ?: context.getString(R.string.an_unknown_error_occurred), 0
+                        ?: context.getString(R.string.an_unexpected_error_occurred), 0
                 )
             }
         } else {
@@ -159,7 +159,7 @@ object AuthenticationUtil {
             }.addOnFailureListener {
                 onAuthenticationFailure(
                     it.localizedMessage?.toString()
-                        ?: context.getString(R.string.an_unknown_error_occurred), 0
+                        ?: context.getString(R.string.an_unexpected_error_occurred), 0
                 )
             }
         }

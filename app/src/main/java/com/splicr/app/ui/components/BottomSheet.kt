@@ -132,6 +132,7 @@ fun CustomBottomSheet(
         R.string.creating_account,
         R.string.sending_link,
         R.string.deleting_item,
+        R.string.deleting_account,
         R.string.sending_feedback,
         R.string.sending_password_reset_link,
         R.string.resending_password_reset_link

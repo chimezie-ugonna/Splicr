@@ -102,7 +102,7 @@ class HomeViewModel : ViewModel() {
             }.onFailure {
                 showError = true
                 errorMessage = it.localizedMessage?.toString()
-                    ?: context.getString(R.string.an_unknown_error_occurred)
+                    ?: context.getString(R.string.an_unexpected_error_occurred)
             }
             isDeleting = false
         }
