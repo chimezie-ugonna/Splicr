@@ -129,8 +129,10 @@ fun CustomBottomSheet(
     val loaderList = listOf(
         R.string.exporting_medium,
         R.string.signing_in,
+        R.string.authenticating_account,
         R.string.creating_account,
         R.string.sending_link,
+        R.string.initiating_sign_in,
         R.string.deleting_item,
         R.string.deleting_account,
         R.string.sending_feedback,

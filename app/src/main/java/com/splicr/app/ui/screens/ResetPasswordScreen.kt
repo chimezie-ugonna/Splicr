@@ -63,6 +63,7 @@ fun ResetPasswordScreen(
         mutableStateOf(false)
     },
     navController: NavHostController,
+    action: String = "",
     resetPasswordViewModel: ResetPasswordViewModel = viewModel()
 ) {
     SplicrTheme(darkTheme = isDarkTheme.value) {
@@ -188,7 +189,7 @@ fun ResetPasswordScreen(
                                     .addOnCompleteListener { task ->
                                         showLoaderBottomSheet.value = false
                                         if (task.isSuccessful) {
-                                            navController.navigate(route = "ResetPasswordRequestSentScreen/${resetPasswordViewModel.emailValue.value.text.trim()}")
+                                            navController.navigate(route = "ResetPasswordRequestSentScreen/${resetPasswordViewModel.emailValue.value.text.trim()}/$action")
                                         } else {
                                             snackBarIsError.value = true
                                             snackBarMessageResource.intValue = 0

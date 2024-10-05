@@ -3,7 +3,7 @@ package com.splicr.app.utils
 import android.app.Activity
 import android.content.Context
 import android.util.Base64
-import android.util.Log
+import androidx.compose.runtime.MutableIntState
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
@@ -28,6 +28,9 @@ object AuthenticationUtil {
         setFilterByAuthorizedAccounts: Boolean,
         scope: CoroutineScope,
         firebaseAuth: FirebaseAuth,
+        action: String,
+        label: MutableIntState,
+        loaderDescription: MutableIntState,
         onAuthenticationFailure: (errorMessage: String, errorMessageResource: Int) -> Unit,
         onAuthenticationSuccess: () -> Unit
     ) {
@@ -53,6 +56,9 @@ object AuthenticationUtil {
                     context = context,
                     result = result,
                     firebaseAuth = firebaseAuth,
+                    action = action,
+                    label = label,
+                    loaderDescription = loaderDescription,
                     onAuthenticationFailure = onAuthenticationFailure,
                     onAuthenticationSuccess = onAuthenticationSuccess
                 )
@@ -64,18 +70,21 @@ object AuthenticationUtil {
                         setFilterByAuthorizedAccounts = false,
                         scope = scope,
                         firebaseAuth = firebaseAuth,
+                        action = action,
+                        label = label,
+                        loaderDescription = loaderDescription,
                         onAuthenticationFailure = onAuthenticationFailure,
                         onAuthenticationSuccess = onAuthenticationSuccess
                     )
-                } else {
-                    Log.e(
-                        "AuthenticationErrorMessage",
-                        e.localizedMessage?.toString()
-                            ?: context.getString(R.string.an_unexpected_error_occurred)
-                    )
+                } else if (e.type == android.credentials.GetCredentialException.TYPE_USER_CANCELED || e.type == android.credentials.GetCredentialException.TYPE_INTERRUPTED) {
                     onAuthenticationFailure(
                         e.localizedMessage?.toString()
                             ?: context.getString(R.string.an_unexpected_error_occurred), -1
+                    )
+                } else {
+                    onAuthenticationFailure(
+                        e.localizedMessage?.toString()
+                            ?: context.getString(R.string.an_unexpected_error_occurred), 0
                     )
                 }
             } catch (e: Exception) {
@@ -91,6 +100,9 @@ object AuthenticationUtil {
         context: Context,
         result: GetCredentialResponse,
         firebaseAuth: FirebaseAuth,
+        action: String,
+        label: MutableIntState,
+        loaderDescription: MutableIntState,
         onAuthenticationFailure: (errorMessage: String, errorMessageResource: Int) -> Unit,
         onAuthenticationSuccess: () -> Unit
     ) {
@@ -98,20 +110,48 @@ object AuthenticationUtil {
             is CustomCredential -> {
                 if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                     try {
-                        firebaseAuth.signInWithCredential(
-                            GoogleAuthProvider.getCredential(
-                                GoogleIdTokenCredential.createFrom(
-                                    credential.data
-                                ).idToken, null
-                            )
-                        ).addOnCompleteListener(context as Activity) { task ->
-                            if (task.isSuccessful) {
-                                onAuthenticationSuccess()
-                            } else {
-                                onAuthenticationFailure(
-                                    task.exception?.localizedMessage?.toString()
-                                        ?: context.getString(R.string.an_unexpected_error_occurred), 0
+                        if (action == "signIn") {
+                            label.intValue = R.string.signing_in
+                            loaderDescription.intValue =
+                                R.string.completing_your_sign_in_thank_you_for_your_patience
+                            firebaseAuth.signInWithCredential(
+                                GoogleAuthProvider.getCredential(
+                                    GoogleIdTokenCredential.createFrom(
+                                        credential.data
+                                    ).idToken, null
                                 )
+                            ).addOnCompleteListener {
+                                if (it.isSuccessful) {
+                                    onAuthenticationSuccess()
+                                } else {
+                                    onAuthenticationFailure(
+                                        it.exception?.localizedMessage?.toString()
+                                            ?: context.getString(R.string.an_unexpected_error_occurred),
+                                        0
+                                    )
+                                }
+                            }
+                        } else {
+                            label.intValue = R.string.authenticating_account
+                            loaderDescription.intValue =
+                                R.string.please_wait_a_moment_while_we_securely_verify_your_identity_to_proceed_with_the_account_deletion_process
+                            val user = firebaseAuth.currentUser
+                            user?.reauthenticate(
+                                GoogleAuthProvider.getCredential(
+                                    GoogleIdTokenCredential.createFrom(
+                                        credential.data
+                                    ).idToken, null
+                                )
+                            )?.addOnCompleteListener {
+                                if (it.isSuccessful) {
+                                    onAuthenticationSuccess()
+                                } else {
+                                    onAuthenticationFailure(
+                                        it.exception?.localizedMessage ?: context.getString(
+                                            R.string.authentication_failed_please_sign_in_again_to_continue_with_the_account_deletion_process
+                                        ), 0
+                                    )
+                                }
                             }
                         }
                     } catch (e: GoogleIdTokenParsingException) {

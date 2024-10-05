@@ -265,7 +265,7 @@ fun Pager(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(
-                            top = if (pagerState.currentPage == 2) 116.dp else 83.dp,
+                            top = if (pagerState.currentPage == 2) 146.dp else 100.dp,
                             start = dimensionResource(id = R.dimen.spacingXl),
                             end = dimensionResource(id = R.dimen.spacingXl),
                             bottom = bottomPadding + bottomSpacing
