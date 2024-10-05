@@ -53,11 +53,12 @@ import com.splicr.app.ui.components.CustomTopNavigationBar
 import com.splicr.app.ui.theme.SplicrTheme
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResetPasswordRequestSentScreen(
     isDarkTheme: MutableState<Boolean> = remember {
         mutableStateOf(false)
-    }, navController: NavHostController, email: String = ""
+    }, navController: NavHostController, action: String = "", email: String = ""
 ) {
     SplicrTheme(darkTheme = isDarkTheme.value) {
         Surface(
@@ -201,7 +202,7 @@ fun ResetPasswordRequestSentScreen(
                     startStringResource = R.string.go_back,
                     startOnClick = {
                         navController.popBackStack(
-                            route = "SignInScreen", inclusive = false
+                            route = "SignInScreen/$action", inclusive = false
                         )
                     })
 

@@ -137,6 +137,7 @@
     <string name="an_error_occurred_please_attempt_the_process_again">An error occurred. Please attempt the process again.</string>
     <string name="signing_in">Signing In</string>
     <string name="creating_account">Creating Account</string>
+    <string name="initiating_your_sign_in_thank_you_for_your_patience">Initiating your sign-in. Thank you for your patience.</string>
     <string name="completing_your_sign_in_thank_you_for_your_patience">Completing your sign-in. Thank you for your patience.</string>
     <string name="registering_your_details_please_hold_on_while_we_create_your_account">Registering your details. Please hold on while we create your account.</string>
     <string name="sending_link">Sending Link</string>
@@ -204,5 +205,10 @@
     <string name="billing_service_disconnected">Billing Service Disconnected</string>
     <string name="failed_to_acknowledge_purchase">Failed to acknowledge purchase: %1$s</string>
     <string name="purchase_state_is_not_purchased">Purchase state is not PURCHASED</string>
+    <string name="for_security_reasons_please_sign_in_again_to_confirm_your_identity_and_complete_this_operation">For security reasons, please sign in again to confirm your identity and complete this operation.</string>
+    <string name="authenticating_account">Authenticating Account</string>
+    <string name="please_wait_a_moment_while_we_securely_verify_your_identity_to_proceed_with_the_account_deletion_process">Please wait a moment while we securely verify your identity to proceed with the account deletion process.</string>
+    <string name="authentication_failed_please_sign_in_again_to_continue_with_the_account_deletion_process">Authentication failed. Please sign in again to continue with the account deletion process.</string>
+    <string name="initiating_sign_in">Initiating Sign In</string>
 
 </resources>

@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,7 +45,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.splicr.app.R
 import com.splicr.app.data.ListItemData
 import com.splicr.app.ui.components.CustomBottomSheet
@@ -62,6 +66,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     isDarkTheme: MutableState<Boolean> = remember {
@@ -104,6 +109,9 @@ fun SettingsScreen(
                 val snackBarIsError = remember {
                     mutableStateOf(true)
                 }
+                val snackBarActionLabelResource = remember {
+                    mutableIntStateOf(0)
+                }
 
                 Column(
                     modifier = Modifier
@@ -130,7 +138,8 @@ fun SettingsScreen(
                         mutableStateOf(false)
                     }
 
-                    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true,
+                    val sheetState = rememberModalBottomSheetState(
+                        skipPartiallyExpanded = true,
                         confirmValueChange = { false })
 
                     val showLoaderBottomSheet = rememberSaveable {
@@ -203,7 +212,7 @@ fun SettingsScreen(
                         loaderDescription = loaderDescription.intValue
                     )
 
-                    val auth = FirebaseAuth.getInstance()
+                    val auth = Firebase.auth
                     val user = remember { mutableStateOf(auth.currentUser) }
                     val emailVerified =
                         remember { mutableStateOf(user.value?.isEmailVerified == true) }
@@ -239,6 +248,75 @@ fun SettingsScreen(
                             }
                         } else {
                             this.cancel()
+                        }
+                    }
+
+                    val accountIsReadyToBeDeleted = rememberSaveable { mutableStateOf(false) }
+
+                    val reAuthenticated =
+                        navController.currentBackStackEntry?.savedStateHandle?.getLiveData<Boolean>(
+                            "reAuthenticated"
+                        )?.observeAsState()
+
+                    reAuthenticated?.value?.let {
+                        if (accountIsReadyToBeDeleted.value != it) {
+                            accountIsReadyToBeDeleted.value = it
+                        }
+                    }
+
+                    LaunchedEffect(accountIsReadyToBeDeleted.value) {
+                        if (accountIsReadyToBeDeleted.value) {
+                            label.intValue = R.string.deleting_account
+                            loaderDescription.intValue =
+                                R.string.deleting_your_account_this_may_take_a_moment
+                            showLoaderBottomSheet.value = true
+                            scope.launch {
+                                deleteUserDataAndAccount(context = context).onSuccess {
+                                    CredentialManager.create(context = context)
+                                        .clearCredentialState(
+                                            ClearCredentialStateRequest()
+                                        )
+                                    auth.signOut()
+                                    homeViewModel.stopListening()
+                                    showLoaderBottomSheet.value = false
+                                    snackBarIsError.value = false
+                                    snackBarMessageResource.intValue =
+                                        R.string.account_deleted_successfully
+                                    snackBarMessage.value = ""
+                                    snackBarActionLabelResource.intValue = 0
+                                    snackBarHostState.showSnackbar(
+                                        ""
+                                    )
+                                }.onFailure {
+                                    showLoaderBottomSheet.value = false
+                                    snackBarIsError.value = true
+                                    snackBarMessageResource.intValue = 0
+                                    snackBarMessage.value =
+                                        if (it is FirebaseAuthRecentLoginRequiredException) {
+                                            context.getString(R.string.for_security_reasons_please_sign_in_again_to_confirm_your_identity_and_complete_this_operation)
+                                        } else {
+                                            it.localizedMessage ?: context.getString(
+                                                R.string.an_unexpected_error_occurred
+                                            )
+                                        }
+                                    snackBarActionLabelResource.intValue =
+                                        if (it is FirebaseAuthRecentLoginRequiredException) {
+                                            R.string.sign_in
+                                        } else {
+                                            0
+                                        }
+                                    snackBarHostState.showSnackbar(
+                                        message = "",
+                                        duration = if (it is FirebaseAuthRecentLoginRequiredException) {
+                                            SnackbarDuration.Indefinite
+                                        } else {
+                                            SnackbarDuration.Short
+                                        }
+                                    )
+                                }
+                                accountIsReadyToBeDeleted.value = false
+                            }
+
                         }
                     }
 
@@ -299,7 +377,7 @@ fun SettingsScreen(
                                 .clickable {
                                     when (item.titleResource) {
                                         R.string.create_an_account_or_sign_in -> {
-                                            navController.navigate("SignInScreen")
+                                            navController.navigate("SignInScreen/signIn")
                                         }
 
                                         R.string.verify_email -> {
@@ -317,12 +395,14 @@ fun SettingsScreen(
                                                             snackBarMessageResource.intValue =
                                                                 R.string.email_verification_link_sent_successfully
                                                             snackBarMessage.value = ""
+                                                            snackBarActionLabelResource.intValue = 0
                                                         } else {
                                                             snackBarIsError.value = true
                                                             snackBarMessageResource.intValue = 0
                                                             snackBarMessage.value =
                                                                 task2.exception?.localizedMessage
                                                                     ?: context.getString(R.string.an_unexpected_error_occurred)
+                                                            snackBarActionLabelResource.intValue = 0
                                                         }
                                                         scope.launch {
                                                             snackBarHostState.showSnackbar(
@@ -335,6 +415,7 @@ fun SettingsScreen(
                                                 snackBarMessageResource.intValue =
                                                     R.string.no_account_signed_in
                                                 snackBarMessage.value = ""
+                                                snackBarActionLabelResource.intValue = 0
                                                 scope.launch { snackBarHostState.showSnackbar("") }
                                             }
 
@@ -342,8 +423,6 @@ fun SettingsScreen(
 
                                         R.string.sign_out -> {
                                             if (user.value != null) {
-                                                auth.signOut()
-                                                homeViewModel.stopListening()
                                                 scope.launch {
                                                     CredentialManager
                                                         .create(context = context)
@@ -351,49 +430,28 @@ fun SettingsScreen(
                                                             ClearCredentialStateRequest()
                                                         )
                                                 }
+                                                auth.signOut()
+                                                homeViewModel.stopListening()
                                             } else {
                                                 snackBarIsError.value = true
                                                 snackBarMessageResource.intValue =
                                                     R.string.no_account_signed_in
                                                 snackBarMessage.value = ""
+                                                snackBarActionLabelResource.intValue = 0
                                                 scope.launch { snackBarHostState.showSnackbar("") }
                                             }
                                         }
 
                                         else -> {
-                                            label.intValue = R.string.deleting_account
-                                            loaderDescription.intValue =
-                                                R.string.deleting_your_account_this_may_take_a_moment
-                                            showLoaderBottomSheet.value = true
-                                            scope.launch {
-                                                deleteUserDataAndAccount(context = context)
-                                                    .onSuccess {
-                                                        auth.signOut()
-                                                        homeViewModel.stopListening()
-                                                        CredentialManager
-                                                            .create(context = context)
-                                                            .clearCredentialState(
-                                                                ClearCredentialStateRequest()
-                                                            )
-                                                        showLoaderBottomSheet.value = false
-                                                        snackBarIsError.value = false
-                                                        snackBarMessageResource.intValue =
-                                                            R.string.account_deleted_successfully
-                                                        snackBarMessage.value = ""
-                                                        snackBarHostState.showSnackbar(
-                                                            ""
-                                                        )
-                                                    }
-                                                    .onFailure {
-                                                        showLoaderBottomSheet.value = false
-                                                        snackBarIsError.value = true
-                                                        snackBarMessageResource.intValue = 0
-                                                        snackBarMessage.value =
-                                                            it.localizedMessage ?: context.getString(
-                                                                R.string.an_unexpected_error_occurred
-                                                            )
-                                                        snackBarHostState.showSnackbar("")
-                                                    }
+                                            if (user.value != null) {
+                                                accountIsReadyToBeDeleted.value = true
+                                            } else {
+                                                snackBarIsError.value = true
+                                                snackBarMessageResource.intValue =
+                                                    R.string.no_account_signed_in
+                                                snackBarMessage.value = ""
+                                                snackBarActionLabelResource.intValue = 0
+                                                scope.launch { snackBarHostState.showSnackbar("") }
                                             }
                                         }
                                     }
@@ -505,7 +563,11 @@ fun SettingsScreen(
                     messageResource = snackBarMessageResource.intValue,
                     isError = snackBarIsError.value,
                     message = snackBarMessage.value,
+                    actionLabelResource = snackBarActionLabelResource.intValue,
                     snackBarHostState = snackBarHostState,
+                    actionLabelOnClick = {
+                        navController.navigate("SignInScreen/reAuthenticate")
+                    },
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
             }

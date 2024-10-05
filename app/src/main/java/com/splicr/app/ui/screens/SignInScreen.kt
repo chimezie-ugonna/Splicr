@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.splicr.app.R
@@ -62,14 +62,19 @@ import com.splicr.app.ui.components.PrimaryButton
 import com.splicr.app.ui.components.SecondaryButton
 import com.splicr.app.ui.theme.SplicrTheme
 import com.splicr.app.utils.AuthenticationUtil
+import com.splicr.app.utils.SplicrBrainUtil.isInternetAvailable
 import com.splicr.app.viewModel.SignInViewModel
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignInScreen(
     isDarkTheme: MutableState<Boolean> = remember {
         mutableStateOf(false)
-    }, navController: NavHostController, signInViewModel: SignInViewModel = viewModel()
+    },
+    navController: NavHostController,
+    action: String = "",
+    signInViewModel: SignInViewModel = viewModel()
 ) {
     SplicrTheme(darkTheme = isDarkTheme.value) {
         Surface(
@@ -118,7 +123,8 @@ fun SignInScreen(
                         startOnClick = { navController.popBackStack() },
                         centerStringResource = R.string.create_an_account_or_sign_in
                     )
-                    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true,
+                    val sheetState = rememberModalBottomSheetState(
+                        skipPartiallyExpanded = true,
                         confirmValueChange = { false })
                     val showLoaderBottomSheet = rememberSaveable {
                         mutableStateOf(false)
@@ -218,35 +224,70 @@ fun SignInScreen(
                             ), textResource = R.string.Continue
                         ) {
                             if (allTextFieldsRequirementsMet.value) {
-                                val auth = FirebaseAuth.getInstance()
-                                label.intValue = R.string.signing_in
-                                loaderDescription.intValue =
-                                    R.string.completing_your_sign_in_thank_you_for_your_patience
-                                showLoaderBottomSheet.value = true
-                                auth.signInWithEmailAndPassword(
-                                    signInViewModel.emailValue.value.text.trim(),
-                                    signInViewModel.passwordValue.value.text
-                                ).addOnCompleteListener { signInTask ->
-                                    if (signInTask.isSuccessful) {
-                                        showLoaderBottomSheet.value = false
-                                        navController.popBackStack()
-                                    } else {
-                                        label.intValue = R.string.creating_account
+                                if (isInternetAvailable(context = context)) {
+                                    val auth = Firebase.auth
+                                    if (action == "signIn") {
+                                        label.intValue = R.string.signing_in
                                         loaderDescription.intValue =
-                                            R.string.registering_your_details_please_hold_on_while_we_create_your_account
-                                        auth.createUserWithEmailAndPassword(
+                                            R.string.completing_your_sign_in_thank_you_for_your_patience
+                                        showLoaderBottomSheet.value = true
+                                        auth.signInWithEmailAndPassword(
                                             signInViewModel.emailValue.value.text.trim(),
                                             signInViewModel.passwordValue.value.text
-                                        ).addOnCompleteListener { createUserTask ->
-                                            showLoaderBottomSheet.value = false
-                                            if (createUserTask.isSuccessful) {
+                                        ).addOnCompleteListener { signInTask ->
+                                            if (signInTask.isSuccessful) {
+                                                showLoaderBottomSheet.value = false
                                                 navController.popBackStack()
                                             } else {
+                                                label.intValue = R.string.creating_account
+                                                loaderDescription.intValue =
+                                                    R.string.registering_your_details_please_hold_on_while_we_create_your_account
+                                                auth.createUserWithEmailAndPassword(
+                                                    signInViewModel.emailValue.value.text.trim(),
+                                                    signInViewModel.passwordValue.value.text
+                                                ).addOnCompleteListener { createUserTask ->
+                                                    showLoaderBottomSheet.value = false
+                                                    if (createUserTask.isSuccessful) {
+                                                        navController.popBackStack()
+                                                    } else {
+                                                        snackBarIsError.value = true
+                                                        snackBarMessageResource.intValue = 0
+                                                        snackBarMessage.value =
+                                                            createUserTask.exception?.localizedMessage
+                                                                ?: context.getString(R.string.an_unexpected_error_occurred)
+                                                        scope.launch {
+                                                            snackBarHostState.showSnackbar(
+                                                                ""
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        label.intValue = R.string.authenticating_account
+                                        loaderDescription.intValue =
+                                            R.string.please_wait_a_moment_while_we_securely_verify_your_identity_to_proceed_with_the_account_deletion_process
+                                        showLoaderBottomSheet.value = true
+                                        val user = auth.currentUser
+                                        val credential = EmailAuthProvider.getCredential(
+                                            signInViewModel.emailValue.value.text.trim(),
+                                            signInViewModel.passwordValue.value.text
+                                        )
+                                        user?.reauthenticate(credential)?.addOnCompleteListener {
+                                            if (it.isSuccessful) {
+                                                showLoaderBottomSheet.value = false
+                                                navController.previousBackStackEntry?.savedStateHandle?.set(
+                                                    "reAuthenticated", true
+                                                )
+                                                navController.popBackStack()
+                                            } else {
+                                                showLoaderBottomSheet.value = false
                                                 snackBarIsError.value = true
                                                 snackBarMessageResource.intValue = 0
                                                 snackBarMessage.value =
-                                                    createUserTask.exception?.localizedMessage
-                                                        ?: context.getString(R.string.an_unexpected_error_occurred)
+                                                    it.exception?.localizedMessage
+                                                        ?: context.getString(R.string.authentication_failed_please_sign_in_again_to_continue_with_the_account_deletion_process)
                                                 scope.launch {
                                                     snackBarHostState.showSnackbar(
                                                         ""
@@ -254,6 +295,16 @@ fun SignInScreen(
                                                 }
                                             }
                                         }
+                                    }
+                                } else {
+                                    snackBarIsError.value = true
+                                    snackBarMessageResource.intValue =
+                                        R.string.no_internet_connection_please_connect_to_the_internet_and_try_again
+                                    snackBarMessage.value = ""
+                                    scope.launch {
+                                        snackBarHostState.showSnackbar(
+                                            ""
+                                        )
                                     }
                                 }
                             } else {
@@ -282,7 +333,7 @@ fun SignInScreen(
                                 .clickable(interactionSource = remember {
                                     MutableInteractionSource()
                                 }, indication = null) {
-                                    navController.navigate("ResetPasswordScreen")
+                                    navController.navigate("ResetPasswordScreen/$action")
                                 },
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onBackground,
@@ -329,15 +380,18 @@ fun SignInScreen(
                             textResource = R.string.sign_in_with_google,
                             leadingImageResource = R.drawable.google_icon
                         ) {
-                            label.intValue = R.string.signing_in
+                            label.intValue = R.string.initiating_sign_in
                             loaderDescription.intValue =
-                                R.string.completing_your_sign_in_thank_you_for_your_patience
+                                R.string.initiating_your_sign_in_thank_you_for_your_patience
                             showLoaderBottomSheet.value = true
                             AuthenticationUtil.authenticateWithGoogle(context = context,
                                 webClientId = webClientId,
                                 setFilterByAuthorizedAccounts = true,
                                 scope = scope,
                                 firebaseAuth = firebaseAuth.value,
+                                action = action,
+                                label = label,
+                                loaderDescription = loaderDescription,
                                 onAuthenticationFailure = { em, emr ->
                                     showLoaderBottomSheet.value = false
                                     if (emr != -1) {
@@ -348,6 +402,11 @@ fun SignInScreen(
                                     }
                                 }) {
                                 showLoaderBottomSheet.value = false
+                                if (action != "signIn") {
+                                    navController.previousBackStackEntry?.savedStateHandle?.set(
+                                        "reAuthenticated", true
+                                    )
+                                }
                                 navController.popBackStack()
                             }
                         }

@@ -114,10 +114,16 @@ fun Navigation(
                 subscriptionViewModel = subscriptionViewModel
             )
         }
-        composable(route = "SignInScreen") {
+        composable(
+            route = "SignInScreen/{action}", arguments = listOf(navArgument("action") {
+                type = NavType.StringType
+            })
+        ) {
+            val action = it.arguments?.getString("action") ?: ""
             SignInScreen(
                 isDarkTheme = isDarkTheme,
                 navController = navController,
+                action = action,
                 signInViewModel = viewModel()
             )
         }
@@ -282,25 +288,37 @@ fun Navigation(
                 subscriptionViewModel = subscriptionViewModel
             )
         }
-        composable(route = "ResetPasswordScreen") {
+        composable(
+            route = "ResetPasswordScreen/{action}", arguments = listOf(navArgument("action") {
+                type = NavType.StringType
+            })
+        ) {
+            val action = it.arguments?.getString("action") ?: ""
             ResetPasswordScreen(
                 isDarkTheme = isDarkTheme,
                 navController = navController,
+                action = action,
                 resetPasswordViewModel = viewModel()
             )
         }
         composable(
-            route = "ResetPasswordRequestSentScreen/{email}",
+            route = "ResetPasswordRequestSentScreen/{email}/{action}",
             arguments = listOf(navArgument("email") {
+                type = NavType.StringType
+            }, navArgument("action") {
                 type = NavType.StringType
             })
         ) {
-            BackHandler(enabled = true) {
-                navController.popBackStack(route = "SignInScreen", inclusive = false)
-            }
             val email = it.arguments?.getString("email") ?: ""
+            val action = it.arguments?.getString("action") ?: ""
+            BackHandler(enabled = true) {
+                navController.popBackStack(route = "SignInScreen/$action", inclusive = false)
+            }
             ResetPasswordRequestSentScreen(
-                isDarkTheme = isDarkTheme, navController = navController, email = email
+                isDarkTheme = isDarkTheme,
+                navController = navController,
+                action = action,
+                email = email
             )
         }
     }

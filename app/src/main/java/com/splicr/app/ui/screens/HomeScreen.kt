@@ -69,6 +69,7 @@ import com.splicr.app.ui.theme.SplicrTheme
 import com.splicr.app.viewModel.HomeViewModel
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     isDarkTheme: MutableState<Boolean> = remember {
@@ -368,7 +369,7 @@ fun EmptyOrNotLoggedInUi(
                     annotatedString.getStringAnnotations(
                         tag = "signIn", start = offset, end = offset
                     ).firstOrNull()?.let {
-                        navController.navigate("SignInScreen")
+                        navController.navigate("SignInScreen/signIn")
                     }
                 },
                 modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacingSm)),
