@@ -4,6 +4,7 @@ package com.splicr.app.ui.components
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.LinearEasing
@@ -21,13 +22,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
@@ -44,6 +48,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -117,6 +122,7 @@ fun CustomBottomSheet(
     videoUriString: String? = null,
     filePath: String? = null,
     canvasItemData: CanvasItemData = CanvasItemData(),
+    thumbnailBitmap: Bitmap? = null,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     viewModel: SettingsViewModel = viewModel(),
     loaderDescription: Int? = null,
@@ -142,13 +148,9 @@ fun CustomBottomSheet(
     if (showBottomSheet.value) {
         ModalBottomSheet(
             onDismissRequest = {
-                if (loaderList.contains(label).not()) {
-                    showBottomSheet.value = false
-                    if (hasPerformedHapticFeedback != null) {
-                        hasPerformedHapticFeedback.value = false
-                    }
-                } else {
-                    scope.launch { sheetState.show() }
+                showBottomSheet.value = false
+                if (hasPerformedHapticFeedback != null) {
+                    hasPerformedHapticFeedback.value = false
                 }
             },
             sheetState = sheetState,
@@ -157,12 +159,22 @@ fun CustomBottomSheet(
             shape = RoundedCornerShape(
                 topStart = 20.dp, topEnd = 20.dp
             ),
-            modifier = Modifier.systemBarsPadding()
+            properties = ModalBottomSheetProperties(
+                shouldDismissOnBackPress = loaderList.contains(label).not()
+            ),
+            modifier = Modifier.statusBarsPadding()
         ) {
             Column(
                 modifier = Modifier
                     .wrapContentSize()
-                    .padding(all = dimensionResource(id = R.dimen.spacingXl))
+                    .padding(
+                        start = dimensionResource(id = R.dimen.spacingXl),
+                        top = dimensionResource(id = R.dimen.spacingXl),
+                        end = dimensionResource(id = R.dimen.spacingXl),
+                        bottom = dimensionResource(id = R.dimen.spacingXl) + WindowInsets.navigationBars
+                            .asPaddingValues()
+                            .calculateBottomPadding()
+                    )
             ) {
                 if (loaderList.contains(label).not()) {
                     Text(text = stringResource(R.string.close),
@@ -417,8 +429,7 @@ fun CustomBottomSheet(
                                                         try {
                                                             context.startActivity(
                                                                 Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    Uri.parse(
+                                                                    Intent.ACTION_VIEW, Uri.parse(
                                                                         "twitter://user?screen_name=${
                                                                             item.subText
                                                                         }"
@@ -428,8 +439,7 @@ fun CustomBottomSheet(
                                                         } catch (e: ActivityNotFoundException) {
                                                             context.startActivity(
                                                                 Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    Uri.parse(
+                                                                    Intent.ACTION_VIEW, Uri.parse(
                                                                         "https://twitter.com/${
                                                                             item.subText
                                                                         }"
@@ -443,8 +453,7 @@ fun CustomBottomSheet(
                                                         try {
                                                             context.startActivity(
                                                                 Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    Uri.parse(
+                                                                    Intent.ACTION_VIEW, Uri.parse(
                                                                         "instagram://user?username=${
                                                                             item.subText
                                                                         }"
@@ -454,8 +463,7 @@ fun CustomBottomSheet(
                                                         } catch (e: ActivityNotFoundException) {
                                                             context.startActivity(
                                                                 Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    Uri.parse(
+                                                                    Intent.ACTION_VIEW, Uri.parse(
                                                                         "https://instagram.com/${
                                                                             item.subText
                                                                         }"
@@ -569,9 +577,39 @@ fun CustomBottomSheet(
                         }
                     }
 
+                    label == R.string.re_authenticate_account -> {
+                        Text(
+                            text = stringResource(R.string.to_complete_the_account_deletion_process_we_need_to_verify_your_identity_for_security_reasons_please_sign_in_again),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .wrapContentHeight()
+                                .padding(top = dimensionResource(id = R.dimen.spacingXl)),
+                            color = MaterialTheme.colorScheme.tertiary,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Normal,
+                            textAlign = TextAlign.Start
+                        )
+
+                        PrimaryButton(
+                            modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacingXl)),
+                            textResource = R.string.sign_in
+                        ) {
+                            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                if (!sheetState.isVisible) {
+                                    showBottomSheet.value = false
+                                    if (hasPerformedHapticFeedback != null) {
+                                        hasPerformedHapticFeedback.value = false
+                                    }
+                                }
+                                navController.navigate("SignInScreen/reAuthenticate")
+                            }
+                        }
+                    }
+
                     label == R.string.saved_to_your_device || label == R.string.saved_to_your_device_and_your_account -> {
 
                         ThumbnailImage(
+                            thumbnailBitmap = thumbnailBitmap,
                             canvasItemData = canvasItemData,
                             modifier = Modifier
                                 .fillMaxWidth()

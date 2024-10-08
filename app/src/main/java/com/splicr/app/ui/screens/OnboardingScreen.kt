@@ -69,7 +69,7 @@ fun OnboardingScreen(
         mutableStateOf(false)
     }, navController: NavController
 ) {
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()

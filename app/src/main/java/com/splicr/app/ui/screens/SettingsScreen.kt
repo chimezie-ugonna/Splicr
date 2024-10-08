@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -77,7 +76,7 @@ fun SettingsScreen(
     homeViewModel: HomeViewModel = viewModel(),
     subscriptionViewModel: SubscriptionViewModel = viewModel()
 ) {
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()
@@ -109,9 +108,6 @@ fun SettingsScreen(
                 val snackBarIsError = remember {
                     mutableStateOf(true)
                 }
-                val snackBarActionLabelResource = remember {
-                    mutableIntStateOf(0)
-                }
 
                 Column(
                     modifier = Modifier
@@ -135,6 +131,9 @@ fun SettingsScreen(
                         mutableStateOf(false)
                     }
                     val showContactSupportBottomSheet = rememberSaveable {
+                        mutableStateOf(false)
+                    }
+                    val showReAuthenticateAccountBottomSheet = rememberSaveable {
                         mutableStateOf(false)
                     }
 
@@ -162,6 +161,8 @@ fun SettingsScreen(
                         subscriptionViewModel.subscriptionStatus.observeAsState(initial = SubscriptionStatus.NONE)
                     val subscriptionRenewalDate =
                         subscriptionViewModel.renewalDate.observeAsState(initial = null)
+                    val subscriptionExpiryDate =
+                        subscriptionViewModel.expiryDate.observeAsState(initial = null)
 
                     LaunchedEffect(showLoader.value) {
                         if (showLoader.value) {
@@ -191,6 +192,13 @@ fun SettingsScreen(
                         hasPerformedHapticFeedback = settingsViewModel.hasPerformedShareYourFeedbackBottomSheetHapticFeedback,
                         navController = navController,
                         showLoader = showLoader
+                    )
+                    CustomBottomSheet(
+                        label = R.string.re_authenticate_account,
+                        showBottomSheet = showReAuthenticateAccountBottomSheet,
+                        isDarkTheme = isDarkTheme,
+                        hasPerformedHapticFeedback = settingsViewModel.hasPerformedReAuthenticateAccountBottomSheetHapticFeedback,
+                        navController = navController
                     )
                     CustomBottomSheet(
                         label = R.string.contact_support,
@@ -259,16 +267,22 @@ fun SettingsScreen(
                         )?.observeAsState()
 
                     reAuthenticated?.value?.let {
-                        if (accountIsReadyToBeDeleted.value != it) {
-                            accountIsReadyToBeDeleted.value = it
-                        }
+                        accountIsReadyToBeDeleted.value = it
+                        navController.previousBackStackEntry?.savedStateHandle?.set(
+                            "reAuthenticated", false
+                        )
                     }
 
                     LaunchedEffect(accountIsReadyToBeDeleted.value) {
                         if (accountIsReadyToBeDeleted.value) {
                             label.intValue = R.string.deleting_account
-                            loaderDescription.intValue =
-                                R.string.deleting_your_account_this_may_take_a_moment
+                            if (reAuthenticated?.value == true) {
+                                loaderDescription.intValue =
+                                    R.string.completing_your_account_deletion_process_this_may_take_a_moment
+                            } else {
+                                loaderDescription.intValue =
+                                    R.string.deleting_your_account_this_may_take_a_moment
+                            }
                             showLoaderBottomSheet.value = true
                             scope.launch {
                                 deleteUserDataAndAccount(context = context).onSuccess {
@@ -283,40 +297,28 @@ fun SettingsScreen(
                                     snackBarMessageResource.intValue =
                                         R.string.account_deleted_successfully
                                     snackBarMessage.value = ""
-                                    snackBarActionLabelResource.intValue = 0
                                     snackBarHostState.showSnackbar(
                                         ""
                                     )
+                                    accountIsReadyToBeDeleted.value = false
                                 }.onFailure {
                                     showLoaderBottomSheet.value = false
-                                    snackBarIsError.value = true
-                                    snackBarMessageResource.intValue = 0
-                                    snackBarMessage.value =
-                                        if (it is FirebaseAuthRecentLoginRequiredException) {
-                                            context.getString(R.string.for_security_reasons_please_sign_in_again_to_confirm_your_identity_and_complete_this_operation)
-                                        } else {
+                                    if (it is FirebaseAuthRecentLoginRequiredException) {
+                                        showReAuthenticateAccountBottomSheet.value = true
+                                    } else {
+                                        snackBarIsError.value = true
+                                        snackBarMessageResource.intValue = 0
+                                        snackBarMessage.value =
                                             it.localizedMessage ?: context.getString(
                                                 R.string.an_unexpected_error_occurred
                                             )
-                                        }
-                                    snackBarActionLabelResource.intValue =
-                                        if (it is FirebaseAuthRecentLoginRequiredException) {
-                                            R.string.sign_in
-                                        } else {
-                                            0
-                                        }
-                                    snackBarHostState.showSnackbar(
-                                        message = "",
-                                        duration = if (it is FirebaseAuthRecentLoginRequiredException) {
-                                            SnackbarDuration.Indefinite
-                                        } else {
-                                            SnackbarDuration.Short
-                                        }
-                                    )
+                                        snackBarHostState.showSnackbar(
+                                            message = ""
+                                        )
+                                    }
+                                    accountIsReadyToBeDeleted.value = false
                                 }
-                                accountIsReadyToBeDeleted.value = false
                             }
-
                         }
                     }
 
@@ -348,7 +350,17 @@ fun SettingsScreen(
                             listOf(
                                 ListItemData(
                                     titleResource = subscriptionStatusDisplayStringResource.intValue,
-                                    subText = subscriptionRenewalDate.value,
+                                    subText = if (subscriptionRenewalDate.value != null) {
+                                        context.getString(
+                                            R.string.auto_renewal, subscriptionRenewalDate.value
+                                        )
+                                    } else if (subscriptionExpiryDate.value != null) {
+                                        context.getString(
+                                            R.string.expiring, subscriptionExpiryDate.value
+                                        )
+                                    } else {
+                                        null
+                                    },
                                     showArrow = false
                                 ), ListItemData(
                                     titleResource = R.string.manage_subscription,
@@ -395,14 +407,12 @@ fun SettingsScreen(
                                                             snackBarMessageResource.intValue =
                                                                 R.string.email_verification_link_sent_successfully
                                                             snackBarMessage.value = ""
-                                                            snackBarActionLabelResource.intValue = 0
                                                         } else {
                                                             snackBarIsError.value = true
                                                             snackBarMessageResource.intValue = 0
                                                             snackBarMessage.value =
                                                                 task2.exception?.localizedMessage
                                                                     ?: context.getString(R.string.an_unexpected_error_occurred)
-                                                            snackBarActionLabelResource.intValue = 0
                                                         }
                                                         scope.launch {
                                                             snackBarHostState.showSnackbar(
@@ -415,7 +425,6 @@ fun SettingsScreen(
                                                 snackBarMessageResource.intValue =
                                                     R.string.no_account_signed_in
                                                 snackBarMessage.value = ""
-                                                snackBarActionLabelResource.intValue = 0
                                                 scope.launch { snackBarHostState.showSnackbar("") }
                                             }
 
@@ -437,7 +446,6 @@ fun SettingsScreen(
                                                 snackBarMessageResource.intValue =
                                                     R.string.no_account_signed_in
                                                 snackBarMessage.value = ""
-                                                snackBarActionLabelResource.intValue = 0
                                                 scope.launch { snackBarHostState.showSnackbar("") }
                                             }
                                         }
@@ -450,7 +458,6 @@ fun SettingsScreen(
                                                 snackBarMessageResource.intValue =
                                                     R.string.no_account_signed_in
                                                 snackBarMessage.value = ""
-                                                snackBarActionLabelResource.intValue = 0
                                                 scope.launch { snackBarHostState.showSnackbar("") }
                                             }
                                         }
@@ -563,11 +570,7 @@ fun SettingsScreen(
                     messageResource = snackBarMessageResource.intValue,
                     isError = snackBarIsError.value,
                     message = snackBarMessage.value,
-                    actionLabelResource = snackBarActionLabelResource.intValue,
                     snackBarHostState = snackBarHostState,
-                    actionLabelOnClick = {
-                        navController.navigate("SignInScreen/reAuthenticate")
-                    },
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
             }

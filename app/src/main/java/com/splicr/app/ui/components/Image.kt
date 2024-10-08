@@ -1,5 +1,6 @@
 package com.splicr.app.ui.components
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -9,8 +10,9 @@ import coil.compose.AsyncImage
 import com.splicr.app.data.CanvasItemData
 
 @Composable
-fun ThumbnailImage(canvasItemData: CanvasItemData, modifier: Modifier = Modifier) {
-    val thumbnailBitmap = canvasItemData.thumbnailBitmap
+fun ThumbnailImage(
+    thumbnailBitmap: Bitmap?, canvasItemData: CanvasItemData, modifier: Modifier = Modifier
+) {
     if (thumbnailBitmap != null) {
         Image(
             modifier = modifier,

@@ -23,12 +23,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -83,7 +83,7 @@ fun SubscriptionScreen(
         mutableStateOf(false)
     }, navController: NavHostController, subscriptionViewModel: SubscriptionViewModel = viewModel()
 ) {
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()
@@ -133,9 +133,7 @@ fun SubscriptionScreen(
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     LaunchedEffect(pagerState) {
                         snapshotFlow { pagerState.currentPage }.collectLatest { _ ->
@@ -219,15 +217,19 @@ fun SubscriptionScreen(
                     }
 
                     HorizontalPager(
-                        state = pagerState
+                        modifier = Modifier.weight(weight = 1f), state = pagerState
                     ) { page ->
                         when (page) {
                             0 -> {
-                                PremiumOptions(prize = R.string._2_500_mth)
+                                PremiumOptions(
+                                    prize = R.string._2_500_month, plan = R.string.monthly_premium
+                                )
                             }
 
                             1 -> {
-                                PremiumOptions(prize = R.string._27_000_yr)
+                                PremiumOptions(
+                                    prize = R.string._27_000_year, plan = R.string.yearly_premium
+                                )
                             }
                         }
                     }
@@ -237,7 +239,7 @@ fun SubscriptionScreen(
                         .fillMaxWidth()
                         .wrapContentHeight()
                         .padding(
-                            top = 58.dp,
+                            top = dimensionResource(id = R.dimen.spacingXl),
                             start = dimensionResource(id = R.dimen.spacingXl),
                             end = dimensionResource(id = R.dimen.spacingXl)
                         )
@@ -258,7 +260,7 @@ fun SubscriptionScreen(
 
                         val today = LocalDate.now()
                         val dateInSevenDays = today.plusDays(7)
-                        val formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.ENGLISH)
+                        val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
                         val dueDate = dateInSevenDays.format(formatter)
 
                         Column(
@@ -294,11 +296,11 @@ fun SubscriptionScreen(
                                     .align(Alignment.Start),
                                 text = if (isChecked.value) {
                                     stringResource(
-                                        R.string.due, dueDate, stringResource(
+                                        R.string.renews_on_at, dueDate, stringResource(
                                             id = if (pagerState.currentPage == 0) {
-                                                R.string._2_500
+                                                R.string._2_500_mth
                                             } else {
-                                                R.string._27_000
+                                                R.string._27_000_yr
                                             }
                                         )
                                     )
@@ -342,7 +344,8 @@ fun SubscriptionScreen(
                             top = dimensionResource(id = R.dimen.spacingMd),
                             start = dimensionResource(id = R.dimen.spacingXl),
                             end = dimensionResource(id = R.dimen.spacingXl)
-                        ), textResource = R.string.Continue
+                        ),
+                        textResource = if (isChecked.value) R.string.try_free else R.string.get_premium
                     ) {
                         subscribe(
                             context = context,
@@ -478,55 +481,53 @@ fun goToHomeScreen(navController: NavController, purchasesRestored: Boolean = fa
 }
 
 @Composable
-fun PremiumOptions(prize: Int) {
-    Column(
+fun PremiumOptions(prize: Int, plan: Int) {
+    LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = dimensionResource(id = R.dimen.spacingXl)),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .wrapContentHeight()
+            .padding(
+                top = dimensionResource(id = R.dimen.spacingXl),
+                start = dimensionResource(id = R.dimen.spacingXl) + dimensionResource(id = R.dimen.spacingLg),
+                end = dimensionResource(id = R.dimen.spacingXl) + dimensionResource(id = R.dimen.spacingLg)
+            )
+            .clip(
+                MaterialTheme.shapes.medium
+            )
+            .background(
+                Brush.verticalGradient(
+                    0f to MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                    1f to MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                )
+            )
+            .padding(
+                horizontal = dimensionResource(id = R.dimen.spacingMd),
+                vertical = dimensionResource(R.dimen.spacingXs)
+            ), horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(
-                    top = dimensionResource(id = R.dimen.spacingXl),
-                    start = dimensionResource(id = R.dimen.spacingLg),
-                    end = dimensionResource(id = R.dimen.spacingLg)
-                )
-                .clip(
-                    MaterialTheme.shapes.medium
-                )
-                .background(
-                    Brush.verticalGradient(
-                        0f to MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                        1f to MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                    )
-                )
-                .padding(
-                    horizontal = dimensionResource(id = R.dimen.spacingMd), vertical = 26.dp
-                )
-        ) {
 
+        item {
             Image(
                 modifier = Modifier
                     .width(110.dp)
                     .height(109.dp)
-                    .align(Alignment.CenterHorizontally),
+                    .padding(
+                        top = dimensionResource(id = R.dimen.spacingXs)
+                    ),
                 painter = painterResource(id = R.drawable.premium_diamond),
                 contentDescription = null
             )
 
             Text(
                 modifier = Modifier
-                    .wrapContentSize()
+                    .fillMaxWidth()
+                    .wrapContentHeight()
                     .padding(
                         top = dimensionResource(
                             id = R.dimen.spacingXl
                         )
-                    )
-                    .align(Alignment.Start),
-                text = stringResource(R.string.premium),
+                    ),
+                text = stringResource(id = plan),
                 color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
@@ -535,33 +536,58 @@ fun PremiumOptions(prize: Int) {
 
             Text(
                 modifier = Modifier
-                    .wrapContentSize()
+                    .fillMaxWidth()
+                    .wrapContentHeight()
                     .padding(
-                        top = dimensionResource(
+                        vertical = dimensionResource(
                             id = R.dimen.spacingXs
                         )
-                    )
-                    .align(Alignment.Start),
-                text = stringResource(
-                    R.string.get_full_access_to_all_the_features_of, stringResource(
-                        id = R.string.in_app_name
-                    )
-                ),
+                    ),
+                text = stringResource(R.string.unlock_premium_features_like),
                 color = MaterialTheme.colorScheme.tertiary,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Normal,
                 textAlign = TextAlign.Start
             )
+        }
 
+        val premiumFeatureList = listOf(
+            R.string.uploading_media_files_from_urls,
+            R.string.using_advanced_voice_prompts,
+            R.string.exporting_in_4k_resolution,
+            R.string.processing_media_longer_than_30_seconds
+        )
+
+        itemsIndexed(
+            premiumFeatureList
+        ) { index, _ ->
             Text(
                 modifier = Modifier
-                    .wrapContentSize()
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .padding(
+                        bottom = dimensionResource(
+                            id = R.dimen.spacingXs
+                        )
+                    ),
+                text = stringResource(id = premiumFeatureList[index]),
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Start
+            )
+        }
+
+        item {
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
                     .padding(
                         top = dimensionResource(
-                            id = R.dimen.spacingMd
+                            id = R.dimen.spacingXs
                         )
-                    )
-                    .align(Alignment.Start),
+                    ),
                 text = stringResource(
                     prize
                 ),
@@ -573,22 +599,24 @@ fun PremiumOptions(prize: Int) {
 
             Text(
                 modifier = Modifier
-                    .wrapContentSize()
+                    .fillMaxWidth()
+                    .wrapContentHeight()
                     .padding(
                         top = dimensionResource(
                             id = R.dimen.spacingXxxs
+                        ), bottom = dimensionResource(
+                            id = R.dimen.spacingXs
                         )
-                    )
-                    .align(Alignment.Start),
-                text = stringResource(R.string.cancel_anytime),
+                    ),
+                text = stringResource(R.string.cancel_anytime_on_the_google_play_store_subscription_auto_renews_unless_canceled_at_least_24_hours_before_the_renewal_date),
                 color = MaterialTheme.colorScheme.tertiary,
                 style = MaterialTheme.typography.labelSmall,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Normal,
                 textAlign = TextAlign.Start
             )
-
         }
+
     }
 }
 

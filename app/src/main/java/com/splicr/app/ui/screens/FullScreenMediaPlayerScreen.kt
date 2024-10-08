@@ -82,7 +82,7 @@ fun FullScreenMediaPlayerScreen(
     isPlaying: Boolean = false,
     duration: Long = 0
 ) {
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()

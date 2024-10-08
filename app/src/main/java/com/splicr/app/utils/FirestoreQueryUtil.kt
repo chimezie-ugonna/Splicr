@@ -1,7 +1,6 @@
 package com.splicr.app.utils
 
 import android.content.Context
-import android.util.Log
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.Query
@@ -44,7 +43,6 @@ object FirestoreQueryUtil {
             paginatedQuery.get().await()
         } catch (e: Exception) {
             e.printStackTrace()
-            e.localizedMessage?.let { Log.d("fetchMedia", it) }
             null
         }
     }
@@ -100,15 +98,9 @@ object FirestoreQueryUtil {
         return Result.success(true)
     }
 
-    suspend fun deleteMediaById(mediaId: String): Result<Boolean> {
+    suspend fun deleteMediaById(documentId: String): Result<Boolean> {
         return try {
-            val documentRef = Firebase.firestore.collection("media").document(mediaId)
-            Firebase.firestore.runTransaction { transaction ->
-                val document = transaction.get(documentRef)
-                if (document.exists() && document.getString("userId") == Firebase.auth.currentUser?.uid) {
-                    transaction.delete(documentRef)
-                }
-            }.await()
+            Firebase.firestore.collection("media").document(documentId).delete().await()
             Result.success(true)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -121,6 +113,7 @@ object FirestoreQueryUtil {
             Firebase.storage.getReferenceFromUrl(fileUrl).delete().await()
             Result.success(true)
         } catch (e: Exception) {
+            e.printStackTrace()
             Result.failure(e)
         }
     }

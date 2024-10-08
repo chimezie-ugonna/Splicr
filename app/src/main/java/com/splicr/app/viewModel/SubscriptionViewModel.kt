@@ -30,6 +30,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
     private lateinit var billingClient: BillingClient
     val subscriptionStatus = MutableLiveData<SubscriptionStatus>()
     val renewalDate = MutableLiveData<String?>()
+    val expiryDate = MutableLiveData<String?>()
     val purchaseResult = MutableLiveData<Result<Unit>>()
     val monthlyProductDetails = MutableLiveData<ProductDetails?>()
     val yearlyProductDetails = MutableLiveData<ProductDetails?>()
@@ -275,7 +276,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
         }
 
         // Calculate the renewal date based on subscription type
-        val autoRenewalDate = if (isSubscribed) {
+        val renewalDate2 = if (isSubscribed) {
             when (productId) {
                 "monthly_premium" -> {
                     calendar.add(Calendar.MONTH, 1)
@@ -296,7 +297,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
         // Reset calendar for calculating the expiry date
         calendar.timeInMillis = purchaseTime
 
-        val expiryDate = if (!isSubscribed && productId != null) {
+        val expiryDate2 = if (!isSubscribed && productId != null) {
             when (productId) {
                 "monthly_premium" -> {
                     calendar.add(Calendar.MONTH, 1)
@@ -314,18 +315,18 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
             null
         }
 
-        // Update the renewal date message
         renewalDate.postValue(
-            when {
-                autoRenewalDate != null -> application.applicationContext.getString(
-                    R.string.auto_renewal, formatTimestamp(autoRenewalDate.time)
-                )
-
-                expiryDate != null -> application.applicationContext.getString(
-                    R.string.expiring, formatTimestamp(expiryDate.time)
-                )
-
-                else -> null
+            if (renewalDate2 != null) {
+                formatTimestamp(renewalDate2.time)
+            } else {
+                null
+            }
+        )
+        expiryDate.postValue(
+            if (expiryDate2 != null) {
+                formatTimestamp(expiryDate2.time)
+            } else {
+                null
             }
         )
     }

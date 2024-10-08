@@ -105,14 +105,14 @@ object SplicrBrainUtil {
                                     )
                                 }
                             } else {
-                                val tagAndAnnotation = "subscribe"
+                                val tagAndAnnotation = "get_premium"
                                 val annotatedString = buildAnnotatedString {
-                                    append(context.getString(R.string.thanks_for_sharing_a_valid_media_url_however_it_seems_like_you_currently_do_not_have_an_active_subscription))
+                                    append(context.getString(R.string.thanks_for_sharing_a_valid_media_url_however_it_seems_like_you_currently_are_not_on_any_of_our_premium_plans_get_one_of_our))
                                     withStyle(style = SpanStyle(color = primaryColor)) {
                                         pushStringAnnotation(
                                             tag = tagAndAnnotation, annotation = tagAndAnnotation
                                         )
-                                        append(context.getString(R.string.subscribe))
+                                        append(context.getString(R.string.premium_plans))
                                         pop()
                                     }
                                     append(context.getString(R.string.and_let_s_give_it_another_go))
@@ -224,17 +224,17 @@ object SplicrBrainUtil {
 
                 subscriptionStatus.value == SubscriptionStatus.NONE && duration > 30000 -> {
                     promptViewModel.removeListItem(item)
-                    val tagAndAnnotation = "subscribe"
+                    val tagAndAnnotation = "get_premium"
                     val annotatedString = buildAnnotatedString {
-                        append(context.getString(R.string.it_looks_like_you_re_trying_to_process_a_video_longer_than_30_seconds_this_feature_is_available_with_our_subscription_plan_to_unlock_the_full_power_of_extended_video_editing_consider))
+                        append(context.getString(R.string.it_looks_like_you_re_trying_to_process_a_video_longer_than_30_seconds_this_feature_is_only_available_on_our_premium_plans_to_unlock_the_full_power_of_extended_video_editing_consider_getting_one_of_our))
                         withStyle(style = SpanStyle(color = primaryColor)) {
                             pushStringAnnotation(
                                 tag = tagAndAnnotation, annotation = tagAndAnnotation
                             )
-                            append(context.getString(R.string.subscribing))
+                            append(context.getString(R.string.premium_plans))
                             pop()
                         }
-                        append(context.getString(R.string.to_our_plan_we_d_love_to_help_you_create_amazing_content))
+                        append(context.getString(R.string.we_d_love_to_help_you_create_amazing_content))
                     }
                     promptViewModel.addListItem(PromptItemData(
                         message = annotatedString

@@ -102,7 +102,7 @@ jobs:
             echo "No ProGuard mapping file found for variant: ${{ env.VARIANT }}. Skipping upload."
           fi
 
-      # Deploy to Google Play (Internal Testing for Staging)
+      # Deploy to Google Play (Beta Testing for Staging)
       - name: Deploy to Google Play (Staging)
         if: github.ref == 'refs/heads/staging'
         uses: r0adkll/upload-google-play@v1
@@ -112,11 +112,10 @@ jobs:
           releaseFiles: app/build/outputs/bundle/staging/app-staging.aab
           whatsNewDirectory: release-notes
           mappingFile: app/build/outputs/mapping/staging/mapping.txt
-          track: internal
-          status: draft
+          track: open
           # Conditionally include debugSymbols if the path exists
           debugSymbols: ${{ env.DEBUG_SYMBOLS != '' && env.DEBUG_SYMBOLS || '' }}
-          changesNotSentForReview: true
+          changesNotSentForReview: false
 
       # Deploy to Google Play (Production for Release)
       - name: Deploy to Google Play (Production)
@@ -132,4 +131,4 @@ jobs:
           inAppUpdatePriority: 5
           # Conditionally include debugSymbols if the path exists
           debugSymbols: ${{ env.DEBUG_SYMBOLS != '' && env.DEBUG_SYMBOLS || '' }}
-          changesNotSentForReview: true
+          changesNotSentForReview: false

@@ -194,6 +194,13 @@ fun PromptItem(
                                                                     )
                                                                 )
                                                             )
+                                                            viewModel.addListItem(
+                                                                PromptItemData(
+                                                                    message = AnnotatedString(
+                                                                        text = context.getString(R.string.how_else_would_you_like_to_trim)
+                                                                    )
+                                                                )
+                                                            )
                                                             navController.navigate(
                                                                 "MediaPlayerScreen/${
                                                                     Uri.encode(
