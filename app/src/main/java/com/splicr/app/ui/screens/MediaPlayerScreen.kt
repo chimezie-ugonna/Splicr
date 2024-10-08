@@ -86,7 +86,7 @@ fun MediaPlayerScreen(
     canvasItemData: CanvasItemData = CanvasItemData()
 ) {
     ScreenOrientationUtil.SetScreenOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()

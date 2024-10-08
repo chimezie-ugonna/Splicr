@@ -4,8 +4,6 @@ import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -21,7 +19,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,8 +37,6 @@ fun CustomSnackBar(
     isError: Boolean = true,
     messageResource: Int,
     message: String = "",
-    actionLabelResource: Int = 0,
-    actionLabelOnClick: () -> Unit = {},
     snackBarHostState: SnackbarHostState
 ) {
     SnackbarHost(
@@ -84,24 +79,6 @@ fun CustomSnackBar(
                 fontWeight = FontWeight.Normal,
                 textAlign = TextAlign.Start
             )
-
-            if (actionLabelResource != 0) {
-                Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.spacingXs)))
-
-                Text(
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        actionLabelOnClick()
-                    },
-                    text = stringResource(id = actionLabelResource),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.End
-                )
-            }
 
             val view = LocalView.current
             if (Build.VERSION.SDK_INT >= 30) {

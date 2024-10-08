@@ -73,7 +73,7 @@ fun ChooseUploadFormatScreen(
         mutableStateOf(false)
     }, navController: NavHostController, subscriptionViewModel: SubscriptionViewModel = viewModel()
 ) {
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()

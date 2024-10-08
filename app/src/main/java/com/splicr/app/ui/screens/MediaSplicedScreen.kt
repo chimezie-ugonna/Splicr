@@ -4,6 +4,7 @@ package com.splicr.app.ui.screens
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.Image
@@ -83,6 +84,7 @@ import com.splicr.app.viewModel.SubscriptionStatus
 import com.splicr.app.viewModel.SubscriptionViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -102,7 +104,7 @@ fun MediaSplicedScreen(
     mediaSplicedViewModel: MediaSplicedViewModel = viewModel(),
     subscriptionViewModel: SubscriptionViewModel = viewModel()
 ) {
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()
@@ -138,6 +140,12 @@ fun MediaSplicedScreen(
                     mutableStateOf("")
                 }
 
+                LaunchedEffect(Unit) {
+                    if (File(context.cacheDir, "temp_url_video.mp4").exists()) {
+                        File(context.cacheDir, "temp_url_video.mp4").delete()
+                    }
+                }
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -162,6 +170,12 @@ fun MediaSplicedScreen(
                         centerComposable = { AppNameText(modifier = Modifier.align(Alignment.Center)) },
                         endStringResource = R.string.done,
                         endOnClick = {
+                            if (File(context.cacheDir, "temp_url_video.mp4").exists()) {
+                                File(context.cacheDir, "temp_url_video.mp4").delete()
+                            }
+                            if (File(context.cacheDir, "temp_file_video.mp4").exists()) {
+                                File(context.cacheDir, "temp_file_video.mp4").delete()
+                            }
                             navController.popBackStack(
                                 route = "HomeScreen/${false}", inclusive = false
                             )
@@ -185,11 +199,19 @@ fun MediaSplicedScreen(
                     val loaderDescription = rememberSaveable {
                         mutableIntStateOf(R.string.saving_your_medium_to_your_device_thank_you_for_your_patience)
                     }
-                    LaunchedEffect(canvasItemData.thumbnailUrl) {
-                        if (canvasItemData.thumbnailUrl.isEmpty()) {
-                            canvasItemData.thumbnailBitmap = getAllVideoMetadata(
+                    val thumbnailBitmap = remember(videoUriString) {
+                        mutableStateOf<Bitmap?>(null)
+                    }
+
+                    LaunchedEffect(videoUriString) {
+                        if (canvasItemData.thumbnailUrl.isEmpty() && thumbnailBitmap.value == null) {
+                            val bitmap = getAllVideoMetadata(
                                 context = context, videoUri = Uri.parse(videoUriString)
                             )?.thumbnail
+
+                            if (bitmap != null) {
+                                thumbnailBitmap.value = bitmap
+                            }
                         }
                     }
 
@@ -221,6 +243,7 @@ fun MediaSplicedScreen(
                             videoUriString = videoUriString,
                             filePath = filePath.value,
                             canvasItemData = canvasItemData,
+                            thumbnailBitmap = thumbnailBitmap.value,
                             scope = scope
                         )
 
@@ -272,6 +295,7 @@ fun MediaSplicedScreen(
                         )
 
                         ThumbnailImage(
+                            thumbnailBitmap = thumbnailBitmap.value,
                             canvasItemData = canvasItemData,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -413,7 +437,8 @@ fun MediaSplicedScreen(
                                     snackBarMessageResource = snackBarMessageResource,
                                     source = source,
                                     loaderDescription = loaderDescription,
-                                    canvasItemData = canvasItemData
+                                    canvasItemData = canvasItemData,
+                                    thumbnailBitmap = thumbnailBitmap.value
                                 )
                             } else {
                                 navController.navigate("ManageSubscriptionScreen")
@@ -434,7 +459,8 @@ fun MediaSplicedScreen(
                                 snackBarMessageResource = snackBarMessageResource,
                                 source = source,
                                 loaderDescription = loaderDescription,
-                                canvasItemData = canvasItemData
+                                canvasItemData = canvasItemData,
+                                thumbnailBitmap = thumbnailBitmap.value
                             )
                         }
                     }
@@ -467,7 +493,8 @@ fun export(
     snackBarIsError: MutableState<Boolean>,
     source: String,
     loaderDescription: MutableIntState,
-    canvasItemData: CanvasItemData
+    canvasItemData: CanvasItemData,
+    thumbnailBitmap: Bitmap?
 ) {
     loaderDescription.intValue =
         R.string.saving_your_medium_to_your_device_thank_you_for_your_patience
@@ -480,6 +507,7 @@ fun export(
         resolution = resolution,
         loaderDescription = loaderDescription,
         canvasItemData = canvasItemData,
+        thumbnailBitmap = thumbnailBitmap,
         onCompletion = { success, errorMessageResource ->
             showExportingMediumBottomSheet.value = false
             if (success) {

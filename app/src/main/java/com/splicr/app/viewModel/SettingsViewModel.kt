@@ -16,6 +16,7 @@ class SettingsViewModel : ViewModel() {
     val hasPerformedFaqsBottomSheetHapticFeedback = mutableStateOf(false)
     val hasPerformedShareYourFeedbackBottomSheetHapticFeedback = mutableStateOf(false)
     val hasPerformedContactSupportBottomSheetHapticFeedback = mutableStateOf(false)
+    val hasPerformedReAuthenticateAccountBottomSheetHapticFeedback = mutableStateOf(false)
 
     var faqs by mutableStateOf<List<FAQItemData>>(emptyList())
         private set

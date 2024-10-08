@@ -1,7 +1,6 @@
 package com.splicr.app.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -45,9 +44,9 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun SplicrTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    isSystemInDarkTheme: Boolean = true,
     colorScheme: ColorScheme = when {
-        darkTheme -> DarkColorScheme
+        isSystemInDarkTheme -> DarkColorScheme
         else -> LightColorScheme
     },
     statusBarColor: Int = Color.Transparent.toArgb(),
@@ -67,7 +66,7 @@ fun SplicrTheme(
                     isAppearanceLightStatusBars
             } else {
                 WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars =
-                    !darkTheme
+                    !isSystemInDarkTheme
             }
             window.navigationBarColor = navigationBarColor
             if (isAppearanceLightNavigationBars != null) {
@@ -77,7 +76,7 @@ fun SplicrTheme(
             } else {
                 WindowInsetsControllerCompat(
                     window, window.decorView
-                ).isAppearanceLightNavigationBars = !darkTheme
+                ).isAppearanceLightNavigationBars = !isSystemInDarkTheme
             }
         }
     }

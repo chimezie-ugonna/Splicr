@@ -6,7 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -23,7 +22,7 @@ class MainActivity : ComponentActivity() {
             val subscriptionViewModel: SubscriptionViewModel by viewModels {
                 SubscriptionViewModelFactory(application) // Pass the application instance if needed
             }
-            val isSystemInDarkTheme = isSystemInDarkTheme()
+            val isSystemInDarkTheme = true
             Navigation(isDarkTheme = remember {
                 mutableStateOf(isSystemInDarkTheme)
             }, subscriptionViewModel = subscriptionViewModel)

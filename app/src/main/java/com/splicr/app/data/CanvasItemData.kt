@@ -1,6 +1,5 @@
 package com.splicr.app.data
 
-import android.graphics.Bitmap
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -11,7 +10,6 @@ data class CanvasItemData(
     var title: String = "",
     var url: String = "",
     var thumbnailUrl: String = "",
-    var thumbnailBitmap: Bitmap? = null,
     var duration: Long = 0,
     var size: Long = 0,
     var aspectRatioTypeKey: String = "",

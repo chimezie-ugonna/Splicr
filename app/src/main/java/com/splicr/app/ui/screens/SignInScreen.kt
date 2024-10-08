@@ -76,7 +76,7 @@ fun SignInScreen(
     action: String = "",
     signInViewModel: SignInViewModel = viewModel()
 ) {
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()

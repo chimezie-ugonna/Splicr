@@ -40,7 +40,7 @@ fun FeedbackSentScreen(
         mutableStateOf(false)
     }, navController: NavHostController
 ) {
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()

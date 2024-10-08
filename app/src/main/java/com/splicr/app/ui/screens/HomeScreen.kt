@@ -79,7 +79,7 @@ fun HomeScreen(
     homeViewModel: HomeViewModel = viewModel(),
     purchasesRestored: Boolean = false
 ) {
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()
@@ -133,7 +133,8 @@ fun HomeScreen(
                     LaunchedEffect(purchasesRestored) {
                         if (purchasesRestored && !hasShownSnackbar.value) {
                             snackBarIsError.value = false
-                            snackBarMessageResource.intValue = R.string.purchase_restored_successfully
+                            snackBarMessageResource.intValue =
+                                R.string.purchase_restored_successfully
                             snackBarMessage.value = ""
                             scope.launch {
                                 snackBarHostState.showSnackbar("")
@@ -152,13 +153,19 @@ fun HomeScreen(
                         fontWeight = FontWeight.Bold
                     )
 
-                    LaunchedEffect(homeViewModel.showError) {
+                    LaunchedEffect(homeViewModel.showError, homeViewModel.showSuccess) {
                         if (homeViewModel.showError) {
                             snackBarIsError.value = true
                             snackBarMessageResource.intValue = 0
                             snackBarMessage.value = homeViewModel.errorMessage
                             scope.launch { snackBarHostState.showSnackbar("") }
                             homeViewModel.showError(status = false)
+                        } else if (homeViewModel.showSuccess) {
+                            snackBarIsError.value = false
+                            snackBarMessageResource.intValue = R.string.item_deleted_successfully
+                            snackBarMessage.value = ""
+                            scope.launch { snackBarHostState.showSnackbar("") }
+                            homeViewModel.showSuccess(status = false)
                         }
                     }
 
@@ -222,90 +229,94 @@ fun HomeScreen(
                                 isUserLoggedIn = isUserLoggedIn
                             )
                         } else {
-                            if (homeViewModel.isLoadingMore && homeViewModel.canvasItems.isEmpty()) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(top = dimensionResource(id = R.dimen.spacingXs))
-                                        .verticalScroll(state = rememberScrollState()),
-                                    verticalArrangement = Arrangement.spacedBy(
-                                        space = dimensionResource(
-                                            id = R.dimen.spacingSm
+                            when {
+                                homeViewModel.isLoadingMore && homeViewModel.canvasItems.isEmpty() -> {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(top = dimensionResource(id = R.dimen.spacingXs))
+                                            .verticalScroll(state = rememberScrollState()),
+                                        verticalArrangement = Arrangement.spacedBy(
+                                            space = dimensionResource(
+                                                id = R.dimen.spacingSm
+                                            )
                                         )
-                                    )
-                                ) {
-                                    val count = 10
-                                    repeat(count) { index ->
-                                        CanvasListLoadingItem(
-                                            index = index,
-                                            count = count,
-                                            homeViewModel = homeViewModel
-                                        )
-                                    }
-                                }
-                            } else if (homeViewModel.canvasItems.isNotEmpty()) {
-                                val listState = rememberLazyListState()
-
-                                LaunchedEffect(listState) {
-                                    snapshotFlow { listState.layoutInfo }.collect { layoutInfo ->
-                                        val firstVisibleIndex = listState.firstVisibleItemIndex
-                                        val visibleItemCount = layoutInfo.visibleItemsInfo.size
-                                        val totalItemCount = layoutInfo.totalItemsCount
-
-                                        // Check if the LazyColumn is scrollable and scrolled to the last item
-                                        if (listState.isScrollInProgress && firstVisibleIndex + visibleItemCount >= totalItemCount - 1) {
-                                            homeViewModel.loadItems()
-                                        }
-                                    }
-                                }
-
-                                LazyColumn(
-                                    state = listState,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(top = dimensionResource(id = R.dimen.spacingXs)),
-                                    verticalArrangement = Arrangement.spacedBy(
-                                        space = dimensionResource(
-                                            id = R.dimen.spacingSm
-                                        )
-                                    )
-                                ) {
-                                    itemsIndexed(homeViewModel.canvasItems) { index, item ->
-                                        CanvasListItem(
-                                            index = index,
-                                            item = item,
-                                            homeViewModel = homeViewModel,
-                                            context = context,
-                                            bottomPadding = if (index == homeViewModel.canvasItems.size - 1) if (homeViewModel.isLoadingMore) 0.dp else dimensionResource(
-                                                id = R.dimen.spacingMd
-                                            ) else 0.dp,
-                                            navController = navController
-                                        )
-                                    }
-
-                                    if (homeViewModel.isLoadingMore) {
-                                        item {
+                                    ) {
+                                        val count = 10
+                                        repeat(count) { index ->
                                             CanvasListLoadingItem(
-                                                index = 0,
-                                                count = 1,
-                                                homeViewModel = homeViewModel,
-                                                topPadding = 0.dp
+                                                index = index,
+                                                count = count,
+                                                homeViewModel = homeViewModel
                                             )
                                         }
                                     }
                                 }
-                                homeViewModel.listenForRealTimeUpdates()
-                            }
 
-                            if (!homeViewModel.isLoadingMore && homeViewModel.isEmpty) {
-                                EmptyOrNotLoggedInUi(
-                                    modifier = Modifier
-                                        .wrapContentSize()
-                                        .align(Alignment.Center),
-                                    navController = navController,
-                                    isUserLoggedIn = isUserLoggedIn
-                                )
-                                homeViewModel.listenForRealTimeUpdates()
+                                homeViewModel.canvasItems.isNotEmpty() -> {
+                                    val listState = rememberLazyListState()
+
+                                    LaunchedEffect(listState) {
+                                        snapshotFlow { listState.layoutInfo }.collect { layoutInfo ->
+                                            val firstVisibleIndex = listState.firstVisibleItemIndex
+                                            val visibleItemCount = layoutInfo.visibleItemsInfo.size
+                                            val totalItemCount = layoutInfo.totalItemsCount
+
+                                            // Check if the LazyColumn is scrollable and scrolled to the last item
+                                            if (listState.isScrollInProgress && firstVisibleIndex + visibleItemCount >= totalItemCount - 1) {
+                                                homeViewModel.loadItems()
+                                            }
+                                        }
+                                    }
+
+                                    LazyColumn(
+                                        state = listState,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(top = dimensionResource(id = R.dimen.spacingXs)),
+                                        verticalArrangement = Arrangement.spacedBy(
+                                            space = dimensionResource(
+                                                id = R.dimen.spacingSm
+                                            )
+                                        )
+                                    ) {
+                                        itemsIndexed(homeViewModel.canvasItems) { index, item ->
+                                            CanvasListItem(
+                                                index = index,
+                                                item = item,
+                                                homeViewModel = homeViewModel,
+                                                context = context,
+                                                bottomPadding = if (index == homeViewModel.canvasItems.size - 1) if (homeViewModel.isLoadingMore) 0.dp else dimensionResource(
+                                                    id = R.dimen.spacingMd
+                                                ) else 0.dp,
+                                                navController = navController
+                                            )
+                                        }
+
+                                        if (homeViewModel.isLoadingMore) {
+                                            item {
+                                                CanvasListLoadingItem(
+                                                    index = 0,
+                                                    count = 1,
+                                                    homeViewModel = homeViewModel,
+                                                    topPadding = 0.dp
+                                                )
+                                            }
+                                        }
+                                    }
+                                    homeViewModel.listenForRealTimeUpdates()
+                                }
+
+                                homeViewModel.isEmpty -> {
+                                    EmptyOrNotLoggedInUi(
+                                        modifier = Modifier
+                                            .wrapContentSize()
+                                            .align(Alignment.Center),
+                                        navController = navController,
+                                        isUserLoggedIn = isUserLoggedIn
+                                    )
+                                    homeViewModel.listenForRealTimeUpdates()
+                                }
                             }
                         }
                     }

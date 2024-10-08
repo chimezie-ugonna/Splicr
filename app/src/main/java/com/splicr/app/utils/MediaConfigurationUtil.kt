@@ -225,8 +225,7 @@ object MediaConfigurationUtil {
                 Date()
             }
         }
-        val dateFormat =
-            SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
+        val dateFormat = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
         return dateFormat.format(date)
     }
 
@@ -239,6 +238,7 @@ object MediaConfigurationUtil {
         source: String,
         loaderDescription: MutableIntState,
         canvasItemData: CanvasItemData,
+        thumbnailBitmap: Bitmap?,
         onCompletion: (success: Boolean, errorMessageResource: Int?) -> Unit
     ) {
         when (inputUri.scheme) {
@@ -259,14 +259,13 @@ object MediaConfigurationUtil {
                     source = source,
                     loaderDescription = loaderDescription,
                     canvasItemData = canvasItemData,
-                    onCompletion = onCompletion,
-                    fileName = "temp_file_video.mp4"
+                    thumbnailBitmap = thumbnailBitmap,
+                    onCompletion = onCompletion
                 )
             }
 
             "http", "https" -> {
-                val fileName = "temp_url_video.mp4"
-                val tempFile = File(context.cacheDir, fileName)
+                val tempFile = File(context.cacheDir, "temp_url_video.mp4")
                 if (tempFile.exists()) {
                     processVideo(
                         context = context,
@@ -277,8 +276,8 @@ object MediaConfigurationUtil {
                         source = source,
                         loaderDescription = loaderDescription,
                         canvasItemData = canvasItemData,
-                        onCompletion = onCompletion,
-                        fileName = fileName
+                        thumbnailBitmap = thumbnailBitmap,
+                        onCompletion = onCompletion
                     )
                 } else {
                     val storageReference = Firebase.storage.getReferenceFromUrl(inputUri.toString())
@@ -292,8 +291,8 @@ object MediaConfigurationUtil {
                             source = source,
                             loaderDescription = loaderDescription,
                             canvasItemData = canvasItemData,
-                            onCompletion = onCompletion,
-                            fileName = fileName
+                            thumbnailBitmap = thumbnailBitmap,
+                            onCompletion = onCompletion
                         )
                     }.addOnFailureListener { _ ->
                         if (tempFile.exists()) {
@@ -321,7 +320,7 @@ object MediaConfigurationUtil {
         source: String,
         loaderDescription: MutableIntState,
         canvasItemData: CanvasItemData,
-        fileName: String,
+        thumbnailBitmap: Bitmap?,
         onCompletion: (success: Boolean, errorMessageResource: Int?) -> Unit
     ) {
         val scale = if (resolution == "4k") "3840:2160" else "1280:720"
@@ -339,7 +338,7 @@ object MediaConfigurationUtil {
                         uploadToFirebaseStorage(
                             videoPath = outputFilePath,
                             thumbnailPath = thumbnailPath,
-                            thumbnailBitmap = canvasItemData.thumbnailBitmap
+                            thumbnailBitmap = thumbnailBitmap
                         ) { videoUrl, thumbnailUrl ->
                             if (videoUrl != null && thumbnailUrl != null) {
                                 canvasItemData.id = UUID.randomUUID().toString() + SimpleDateFormat(
@@ -350,11 +349,10 @@ object MediaConfigurationUtil {
                                 canvasItemData.url = videoUrl
                                 canvasItemData.thumbnailUrl = thumbnailUrl
 
-                                Firebase.firestore.collection("media").add(canvasItemData)
+                                Firebase.firestore.collection("media")
+                                    .document(canvasItemData.id)
+                                    .set(canvasItemData)
                                     .addOnSuccessListener {
-                                        if (File(context.cacheDir, fileName).exists()) {
-                                            File(context.cacheDir, fileName).delete()
-                                        }
                                         triggerInAppReviewAutomatically(context = context)
                                         onCompletion(true, null)
                                     }.addOnFailureListener { e ->
@@ -378,9 +376,6 @@ object MediaConfigurationUtil {
 
                         }
                     } else {
-                        if (File(context.cacheDir, fileName).exists()) {
-                            File(context.cacheDir, fileName).delete()
-                        }
                         triggerInAppReviewAutomatically(context = context)
                         onCompletion(true, null)
                     }

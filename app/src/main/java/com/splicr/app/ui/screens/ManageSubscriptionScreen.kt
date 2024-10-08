@@ -71,7 +71,7 @@ fun ManageSubscriptionScreen(
         mutableStateOf(false)
     }, navController: NavHostController, subscriptionViewModel: SubscriptionViewModel = viewModel()
 ) {
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()
@@ -103,12 +103,21 @@ fun ManageSubscriptionScreen(
                 val initialLaunch = remember { mutableStateOf(true) }
                 val subscriptionStatus =
                     subscriptionViewModel.subscriptionStatus.observeAsState(initial = SubscriptionStatus.NONE)
+                val subscriptionRenewalDate =
+                    subscriptionViewModel.renewalDate.observeAsState(initial = null)
+                val subscriptionExpiryDate =
+                    subscriptionViewModel.expiryDate.observeAsState(initial = null)
                 val currentPlan = rememberSaveable {
                     mutableStateOf(false)
                 }
-                if (subscriptionStatus.value != SubscriptionStatus.NONE) {
-                    currentPlan.value =
-                        pagerState.currentPage == 0 && subscriptionStatus.value == SubscriptionStatus.MONTHLY_SUBSCRIPTION || pagerState.currentPage == 0 && subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL || pagerState.currentPage == 1 && subscriptionStatus.value == SubscriptionStatus.YEARLY_SUBSCRIPTION || pagerState.currentPage == 1 && subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL
+                LaunchedEffect(subscriptionStatus.value) {
+                    if (subscriptionStatus.value != SubscriptionStatus.NONE) {
+                        currentPlan.value =
+                            pagerState.currentPage == 0 && subscriptionStatus.value == SubscriptionStatus.MONTHLY_SUBSCRIPTION || pagerState.currentPage == 0 && subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL || pagerState.currentPage == 1 && subscriptionStatus.value == SubscriptionStatus.YEARLY_SUBSCRIPTION || pagerState.currentPage == 1 && subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL
+                    }
+                }
+                LaunchedEffect(subscriptionRenewalDate.value) {
+
                 }
 
                 LaunchedEffect(pagerState) {
@@ -153,7 +162,7 @@ fun ManageSubscriptionScreen(
                                     id = R.dimen.spacingXl
                                 ), end = dimensionResource(
                                     id = R.dimen.spacingXl
-                                )
+                                ), bottom = dimensionResource(id = R.dimen.spacingXs)
                             ),
                         text = stringResource(R.string.your_plan),
                         color = MaterialTheme.colorScheme.onBackground,
@@ -162,23 +171,20 @@ fun ManageSubscriptionScreen(
                         textAlign = TextAlign.Start
                     )
 
-                    val list = listOf(
-                        R.string.seamlessly_upload_media_files_directly_from_urls_ensuring_a_streamlined_and_efficient_workflow,
-                        R.string.utilize_advanced_voice_prompts_to_enhance_your_user_interactions_and_improve_overall_engagement,
-                        R.string.export_your_media_in_stunning_4k_resolution_delivering_high_quality_content_with_exceptional_clarity_and_detail,
-                        R.string.unlock_the_ability_to_process_media_longer_than_30_seconds_enabling_extended_content_creation_and_editing_capabilities
-                    )
-
                     HorizontalPager(
                         modifier = Modifier.weight(1f), state = pagerState
                     ) { page ->
                         when (page) {
                             0 -> {
-                                Options(list)
+                                Options(
+                                    prize = R.string._2_500_month, plan = R.string.monthly_premium
+                                )
                             }
 
                             1 -> {
-                                Options(list)
+                                Options(
+                                    prize = R.string._27_000_year, plan = R.string.yearly_premium
+                                )
                             }
                         }
                     }
@@ -294,24 +300,182 @@ fun ManageSubscriptionScreen(
                                     top = dimensionResource(id = R.dimen.spacingSm)
                                 ),
                             text = if (subscriptionStatus.value != SubscriptionStatus.NONE) {
-                                if (pagerState.currentPage == 0) stringResource(
-                                    R.string.auto_renews_at, stringResource(
-                                        id = R.string._2_500_mth
-                                    )
-                                ) else stringResource(
-                                    R.string.auto_renews_at, stringResource(
-                                        id = R.string._27_000_yr
-                                    )
-                                )
+                                if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL || subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL) {
+                                    if (subscriptionExpiryDate.value != null) {
+                                        if (pagerState.currentPage == 0) {
+                                            if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL) {
+                                                stringResource(
+                                                    R.string.free_trial_expires_on,
+                                                    subscriptionExpiryDate.value!!
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.cancel_anytime,
+                                                    stringResource(id = R.string._2_500_mth)
+                                                )
+                                            }
+                                        } else {
+                                            if (subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL) {
+                                                stringResource(
+                                                    R.string.free_trial_expires_on,
+                                                    subscriptionExpiryDate.value!!
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.cancel_anytime,
+                                                    stringResource(id = R.string._27_000_yr)
+                                                )
+                                            }
+                                        }
+                                    } else if (subscriptionRenewalDate.value != null) {
+                                        if (pagerState.currentPage == 0) {
+                                            if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL) {
+                                                stringResource(
+                                                    R.string.free_for_7_days_then_starting,
+                                                    stringResource(id = R.string._2_500_mth),
+                                                    subscriptionRenewalDate.value!!
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.cancel_anytime,
+                                                    stringResource(id = R.string._2_500_mth)
+                                                )
+                                            }
+                                        } else {
+                                            if (subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL) {
+                                                stringResource(
+                                                    R.string.free_for_7_days_then_starting,
+                                                    stringResource(id = R.string._27_000_yr),
+                                                    subscriptionRenewalDate.value!!
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.cancel_anytime,
+                                                    stringResource(id = R.string._27_000_yr)
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        if (pagerState.currentPage == 0) {
+                                            if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL) {
+                                                stringResource(
+                                                    R.string.free_for_7_days_then,
+                                                    stringResource(id = R.string._2_500_mth)
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.cancel_anytime,
+                                                    stringResource(id = R.string._2_500_mth)
+                                                )
+                                            }
+                                        } else {
+                                            if (subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL) {
+                                                stringResource(
+                                                    R.string.free_for_7_days_then,
+                                                    stringResource(id = R.string._27_000_yr)
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.cancel_anytime,
+                                                    stringResource(id = R.string._27_000_yr)
+                                                )
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    if (subscriptionExpiryDate.value != null) {
+                                        if (pagerState.currentPage == 0) {
+                                            if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL) {
+                                                stringResource(
+                                                    R.string.premium_expires_on,
+                                                    subscriptionExpiryDate.value!!
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.cancel_anytime,
+                                                    stringResource(id = R.string._2_500_mth)
+                                                )
+                                            }
+                                        } else {
+                                            if (subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL) {
+                                                stringResource(
+                                                    R.string.premium_expires_on,
+                                                    subscriptionExpiryDate.value!!
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.cancel_anytime,
+                                                    stringResource(id = R.string._27_000_yr)
+                                                )
+                                            }
+                                        }
+                                    } else if (subscriptionRenewalDate.value != null) {
+                                        if (pagerState.currentPage == 0) {
+                                            if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL) {
+                                                stringResource(
+                                                    R.string.renews_on_at,
+                                                    subscriptionRenewalDate.value!!,
+                                                    stringResource(
+                                                        id = R.string._2_500_mth
+                                                    )
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.cancel_anytime,
+                                                    stringResource(id = R.string._2_500_mth)
+                                                )
+                                            }
+                                        } else {
+                                            if (subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL) {
+                                                stringResource(
+                                                    R.string.renews_on_at,
+                                                    subscriptionRenewalDate.value!!,
+                                                    stringResource(
+                                                        id = R.string._27_000_yr
+                                                    )
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.cancel_anytime,
+                                                    stringResource(id = R.string._27_000_yr)
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        if (pagerState.currentPage == 0) {
+                                            if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL) {
+                                                stringResource(
+                                                    R.string.renews_at,
+                                                    stringResource(id = R.string._2_500_mth)
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.cancel_anytime,
+                                                    stringResource(id = R.string._2_500_mth)
+                                                )
+                                            }
+                                        } else {
+                                            if (subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL) {
+                                                stringResource(
+                                                    R.string.renews_at,
+                                                    stringResource(id = R.string._27_000_yr)
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.cancel_anytime,
+                                                    stringResource(id = R.string._27_000_yr)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             } else {
                                 if (pagerState.currentPage == 0) stringResource(
-                                    R.string._7_days_free_trial_and_then, stringResource(
-                                        id = R.string._2_500_mth
-                                    )
+                                    R.string.cancel_anytime,
+                                    stringResource(id = R.string._2_500_mth)
                                 ) else stringResource(
-                                    R.string._7_days_free_trial_and_then, stringResource(
-                                        id = R.string._27_000_yr
-                                    )
+                                    R.string.cancel_anytime,
+                                    stringResource(id = R.string._27_000_yr)
                                 )
                             },
                             color = MaterialTheme.colorScheme.onBackground,
@@ -341,7 +505,7 @@ fun ManageSubscriptionScreen(
 }
 
 @Composable
-fun Options(list: List<Int>) {
+fun Options(prize: Int, plan: Int) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -355,7 +519,7 @@ fun Options(list: List<Int>) {
                     .fillMaxWidth()
                     .wrapContentHeight()
                     .padding(
-                        top = dimensionResource(id = R.dimen.spacingMd)
+                        top = dimensionResource(id = R.dimen.spacingXs)
                     )
                     .clip(
                         MaterialTheme.shapes.medium
@@ -386,7 +550,7 @@ fun Options(list: List<Int>) {
                         modifier = Modifier
                             .wrapContentSize()
                             .align(Alignment.Start),
-                        text = stringResource(R.string.premium),
+                        text = stringResource(id = plan),
                         color = MaterialTheme.colorScheme.onBackground,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
@@ -403,14 +567,28 @@ fun Options(list: List<Int>) {
                                 )
                             )
                             .align(Alignment.Start),
-                        text = stringResource(
-                            R.string.get_full_access_to_all_the_features_of, stringResource(
-                                id = R.string.in_app_name
-                            )
-                        ),
+                        text = stringResource(R.string.unlock_all_premium_features),
                         color = MaterialTheme.colorScheme.tertiary,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Normal,
+                        textAlign = TextAlign.Start
+                    )
+
+                    Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight()
+                            .padding(
+                                top = dimensionResource(
+                                    id = R.dimen.spacingXs
+                                )
+                            ),
+                        text = stringResource(
+                            prize
+                        ),
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Start
                     )
                 }
@@ -437,6 +615,13 @@ fun Options(list: List<Int>) {
                 textAlign = TextAlign.Start
             )
         }
+
+        val list = listOf(
+            R.string.seamlessly_upload_media_files_directly_from_urls_ensuring_a_streamlined_and_efficient_workflow,
+            R.string.utilize_advanced_voice_prompts_to_enhance_your_user_interactions_and_improve_overall_engagement,
+            R.string.export_your_media_in_stunning_4k_resolution_delivering_high_quality_content_with_exceptional_clarity_and_detail,
+            R.string.unlock_the_ability_to_process_media_longer_than_30_seconds_enabling_extended_content_creation_and_editing_capabilities
+        )
 
         itemsIndexed(list) { _, item ->
             Column(

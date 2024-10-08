@@ -60,7 +60,7 @@ fun ResetPasswordRequestSentScreen(
         mutableStateOf(false)
     }, navController: NavHostController, action: String = "", email: String = ""
 ) {
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()

@@ -71,7 +71,7 @@ fun NameYourProjectScreen(
     isPlaying: Boolean = false,
     nameYourProjectViewModel: NameYourProjectViewModel = viewModel()
 ) {
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()

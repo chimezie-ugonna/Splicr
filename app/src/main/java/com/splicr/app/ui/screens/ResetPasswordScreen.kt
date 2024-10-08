@@ -66,7 +66,7 @@ fun ResetPasswordScreen(
     action: String = "",
     resetPasswordViewModel: ResetPasswordViewModel = viewModel()
 ) {
-    SplicrTheme(darkTheme = isDarkTheme.value) {
+    SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()

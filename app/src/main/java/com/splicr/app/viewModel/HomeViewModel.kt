@@ -14,6 +14,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.splicr.app.R
 import com.splicr.app.data.CanvasItemData
+import com.splicr.app.utils.FirestoreQueryUtil.deleteFileByUrl
 import com.splicr.app.utils.FirestoreQueryUtil.deleteMediaById
 import com.splicr.app.utils.FirestoreQueryUtil.fetchMedia
 import kotlinx.coroutines.launch
@@ -34,6 +35,9 @@ class HomeViewModel : ViewModel() {
         private set
 
     var showError by mutableStateOf(false)
+        private set
+
+    var showSuccess by mutableStateOf(false)
         private set
 
     var errorMessage by mutableStateOf("")
@@ -66,39 +70,29 @@ class HomeViewModel : ViewModel() {
     fun deleteItem(item: CanvasItemData, context: Context) {
         viewModelScope.launch {
             isDeleting = true
-            showError(status = false)
+            showError = false
+            showSuccess = false
             errorMessage = ""
-            /*deleteFileByUrl(item.url).onSuccess {
+            deleteFileByUrl(item.url).onSuccess {
                 deleteFileByUrl(item.thumbnailUrl).onSuccess {
-                    deleteMediaById(item.id).onSuccess {
+                    deleteMediaById(documentId = item.id).onSuccess {
                         canvasItems = canvasItems.toMutableList().also {
                             it.remove(
                                 item
                             )
                         }
+                        showSuccess = true
                         isEmpty = canvasItems.isEmpty()
                     }.onFailure {
                         showError = true
                         errorMessage = it.localizedMessage?.toString()
-                            ?: context.getString(R.string.an_unknown_error_occurred)
+                            ?: context.getString(R.string.an_unexpected_error_occurred)
                     }
                 }.onFailure {
                     showError = true
                     errorMessage = it.localizedMessage?.toString()
-                        ?: context.getString(R.string.an_unknown_error_occurred)
+                        ?: context.getString(R.string.an_unexpected_error_occurred)
                 }
-            }.onFailure {
-                showError = true
-                errorMessage = it.localizedMessage?.toString()
-                    ?: context.getString(R.string.an_unknown_error_occurred)
-            }*/
-            deleteMediaById(item.id).onSuccess {
-                canvasItems = canvasItems.toMutableList().also {
-                    it.remove(
-                        item
-                    )
-                }
-                isEmpty = canvasItems.isEmpty()
             }.onFailure {
                 showError = true
                 errorMessage = it.localizedMessage?.toString()
@@ -161,6 +155,10 @@ class HomeViewModel : ViewModel() {
 
     fun showError(status: Boolean) {
         showError = status
+    }
+
+    fun showSuccess(status: Boolean) {
+        showSuccess = status
     }
 
     override fun onCleared() {
