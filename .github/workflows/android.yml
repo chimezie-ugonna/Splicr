@@ -115,7 +115,7 @@ jobs:
           track: beta
           # Conditionally include debugSymbols if the path exists
           debugSymbols: ${{ env.DEBUG_SYMBOLS != '' && env.DEBUG_SYMBOLS || '' }}
-          changesNotSentForReview: false
+          changesNotSentForReview: true
 
       # Deploy to Google Play (Production for Release)
       - name: Deploy to Google Play (Production)
