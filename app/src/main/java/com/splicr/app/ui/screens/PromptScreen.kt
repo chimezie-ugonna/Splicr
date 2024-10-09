@@ -168,11 +168,13 @@ fun PromptScreen(
                         startOnClick = { navController.popBackStack() },
                         centerComposable = { AppNameText(modifier = Modifier.align(Alignment.Center)) })
 
-                    promptViewModel.updateListItems(
-                        uploadFormatStringResource = uploadFormatStringResource,
-                        videoUri = videoUriString,
-                        context = context
-                    )
+                    LaunchedEffect(Unit) {
+                        promptViewModel.initializeListItems(
+                            uploadFormatStringResource = uploadFormatStringResource,
+                            videoUri = videoUriString,
+                            context = context
+                        )
+                    }
 
                     val listState = rememberLazyListState()
                     val isScrolledToBottom by remember {

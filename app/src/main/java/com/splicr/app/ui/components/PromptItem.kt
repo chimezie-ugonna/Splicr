@@ -184,6 +184,9 @@ fun PromptItem(
                                                         val size = getAllVideoMetadata(
                                                             context = context, videoUri = uri
                                                         )?.fileSize
+                                                        val duration2 = getAllVideoMetadata(
+                                                            context = context, videoUri = uri
+                                                        )?.duration ?: 0
                                                         if (size != null) {
                                                             viewModel.addListItem(
                                                                 PromptItemData(
@@ -197,7 +200,9 @@ fun PromptItem(
                                                             viewModel.addListItem(
                                                                 PromptItemData(
                                                                     message = AnnotatedString(
-                                                                        text = context.getString(R.string.how_else_would_you_like_to_trim)
+                                                                        text = context.getString(
+                                                                            R.string.how_else_would_you_like_to_trim
+                                                                        )
                                                                     )
                                                                 )
                                                             )
@@ -211,7 +216,8 @@ fun PromptItem(
                                                                                 ),
                                                                                 aspectRatioWidth = aspectRatioWidth,
                                                                                 aspectRatioHeight = aspectRatioHeight,
-                                                                                size = size
+                                                                                size = size,
+                                                                                duration = duration2
                                                                             )
                                                                         )
                                                                     )

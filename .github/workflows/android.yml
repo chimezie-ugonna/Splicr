@@ -89,7 +89,7 @@ jobs:
           releaseFiles: app/build/outputs/bundle/staging/app-staging.aab
           whatsNewDirectory: whatsnew
           mappingFile: app/build/outputs/mapping/staging/mapping.txt
-          track: alpha
+          track: beta
           debugSymbols: ${{ env.DEBUG_SYMBOLS != '' && env.DEBUG_SYMBOLS || '' }}
           changesNotSentForReview: true
 
