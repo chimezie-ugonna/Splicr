@@ -112,7 +112,7 @@ jobs:
           releaseFiles: app/build/outputs/bundle/staging/app-staging.aab
           whatsNewDirectory: release-notes
           mappingFile: app/build/outputs/mapping/staging/mapping.txt
-          track: beta
+          track: alpha
           # Conditionally include debugSymbols if the path exists
           debugSymbols: ${{ env.DEBUG_SYMBOLS != '' && env.DEBUG_SYMBOLS || '' }}
           changesNotSentForReview: true
@@ -131,4 +131,4 @@ jobs:
           inAppUpdatePriority: 5
           # Conditionally include debugSymbols if the path exists
           debugSymbols: ${{ env.DEBUG_SYMBOLS != '' && env.DEBUG_SYMBOLS || '' }}
-          changesNotSentForReview: false
+          changesNotSentForReview: true
