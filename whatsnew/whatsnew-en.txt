@@ -1,0 +1,7 @@
+What's New in Version 6.0.3:
+
+- Fixed various bugs to improve stability and performance.
+- Resolved minor issues affecting app navigation.
+- Enhanced overall user experience with backend optimizations.
+
+Thank you for using our app! Share feedback via the Play Store, using the feedback option in the app, or email us at splicrapp@gmail.com.
