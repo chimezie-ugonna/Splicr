@@ -91,7 +91,6 @@ jobs:
           mappingFile: app/build/outputs/mapping/staging/mapping.txt
           track: beta
           debugSymbols: ${{ env.DEBUG_SYMBOLS != '' && env.DEBUG_SYMBOLS || '' }}
-          changesNotSentForReview: true
 
       # Deploy to Google Play (Production)
       - name: Deploy to Google Play (Production)
@@ -106,4 +105,3 @@ jobs:
           track: production
           inAppUpdatePriority: 5
           debugSymbols: ${{ env.DEBUG_SYMBOLS != '' && env.DEBUG_SYMBOLS || '' }}
-          changesNotSentForReview: true
