@@ -164,7 +164,7 @@ object MediaConfigurationUtil {
 
     suspend fun downloadVideoToLocal(context: Context, videoUrl: String): Result<Uri?> {
         return withContext(Dispatchers.IO) {
-            val fileName = "temp_video_${System.currentTimeMillis()}.mp4"
+            val fileName = "temp_download_video.mp4"
             val file = File(context.cacheDir, fileName)
 
             try {
@@ -243,13 +243,6 @@ object MediaConfigurationUtil {
     ) {
         when (inputUri.scheme) {
             "file" -> {
-
-                if (canvasItemData.duration == 0L) {
-                    canvasItemData.duration = getAllVideoMetadata(
-                        context = context, videoUri = inputUri
-                    )?.duration ?: 0
-                }
-
                 processVideo(
                     context = context,
                     inputFile = File(inputUri.path!!),
@@ -326,10 +319,7 @@ object MediaConfigurationUtil {
         val scale = if (resolution == "4k") "3840:2160" else "1280:720"
 
         FFmpegKit.executeAsync("-i ${inputFile.absolutePath} -vf scale=$scale -c:v mpeg4 -preset slow -crf 22 -c:a copy $outputFilePath") { session ->
-            val returnCode = session.returnCode
-            Log.d("VideoExport", "FFmpeg output: ${session.output}")
-
-            if (returnCode.isValueSuccess) {
+            if (session.returnCode.isValueSuccess) {
                 val savedToDevice = saveVideoToDevice(context, outputFilePath)
                 if (savedToDevice) {
                     if (source != "HomeScreen" && Firebase.auth.currentUser != null) {
@@ -348,11 +338,12 @@ object MediaConfigurationUtil {
                                 )
                                 canvasItemData.url = videoUrl
                                 canvasItemData.thumbnailUrl = thumbnailUrl
+                                canvasItemData.size = getAllVideoMetadata(
+                                    context = context, videoUri = Uri.fromFile(File(outputFilePath))
+                                )?.fileSize ?: 0
 
-                                Firebase.firestore.collection("media")
-                                    .document(canvasItemData.id)
-                                    .set(canvasItemData)
-                                    .addOnSuccessListener {
+                                Firebase.firestore.collection("media").document(canvasItemData.id)
+                                    .set(canvasItemData).addOnSuccessListener {
                                         triggerInAppReviewAutomatically(context = context)
                                         onCompletion(true, null)
                                     }.addOnFailureListener { e ->
@@ -586,16 +577,15 @@ object MediaConfigurationUtil {
                 // Single range case: trim and adjust resolution
                 val range = trimRanges.first()
                 val tempFilePath = File(tempDirectory, "segment_1.mp4").absolutePath
-                val trimCommand =
-                    "-y -i ${videoFile.absolutePath} -ss ${range.startTime} -to ${range.endTime} -c:v mpeg4 -crf 23 -preset fast -c:a aac $tempFilePath"
+                val trimCommand = "-y -i ${videoFile.absolutePath} -ss ${range.startTime} -to ${range.endTime} -c:v mpeg4 -crf 18 -preset slower -c:a copy $tempFilePath"
 
                 val trimSession = FFmpegKit.execute(trimCommand)
                 if (trimSession.returnCode.isValueSuccess) {
-                    // Use a different file for resolution adjustment
                     adjustAspectRatio(
                         tempFilePath, tempFileVideoPath, aspectRatioWidth, aspectRatioHeight
                     )
                 } else {
+                    Log.d("FFmpegError trimSession", "FFmpeg output: ${trimSession.output}")
                     null
                 }
             }
@@ -605,13 +595,13 @@ object MediaConfigurationUtil {
                 val tempFilePaths = mutableListOf<String>()
                 trimRanges.forEachIndexed { index, range ->
                     val tempFilePath = File(tempDirectory, "segment_${index + 1}.mp4").absolutePath
-                    val trimCommand =
-                        "-y -i ${videoFile.absolutePath} -ss ${range.startTime} -to ${range.endTime} -c:v mpeg4 -crf 23 -preset fast -c:a aac $tempFilePath"
+                    val trimCommand = "-y -i ${videoFile.absolutePath} -ss ${range.startTime} -to ${range.endTime} -c:v mpeg4 -crf 18 -preset slower -c:a copy $tempFilePath"
 
                     val trimSession = FFmpegKit.execute(trimCommand)
                     if (trimSession.returnCode.isValueSuccess) {
                         tempFilePaths.add(tempFilePath)
                     } else {
+                        Log.d("FFmpegError trimSession", "FFmpeg output: ${trimSession.output}")
                         return@processVideoInternal null
                     }
                 }
@@ -621,7 +611,6 @@ object MediaConfigurationUtil {
                         finalVideoPath = tempFileForMerge,
                         context = context
                     )
-                    // Ensure different file paths for merging and final resolution adjustment
                     if (mergeResult != null) {
                         adjustAspectRatio(
                             tempFileForMerge, tempFileVideoPath, aspectRatioWidth, aspectRatioHeight
@@ -642,17 +631,14 @@ object MediaConfigurationUtil {
         targetAspectRatioWidth: Int,
         targetAspectRatioHeight: Int
     ): Uri? {
-        val scaleAndPadCommand =
-            "-i $inputPath -vf \"scale=$targetAspectRatioWidth:$targetAspectRatioHeight\" -c:v mpeg4 $outputPath"
+        val scaleAndPadCommand = "-i $inputPath -vf \"scale='if(gt(iw/ih,$targetAspectRatioWidth/$targetAspectRatioHeight),$targetAspectRatioWidth,-1)':'if(gt(iw/ih,$targetAspectRatioWidth/$targetAspectRatioHeight),-1,$targetAspectRatioHeight)',pad=$targetAspectRatioWidth:$targetAspectRatioHeight:(ow-iw)/2:(oh-ih)/2\" -c:v mpeg4 -crf 18 -c:a copy $outputPath"
 
         val session = FFmpegKit.execute(scaleAndPadCommand)
 
         return if (session.returnCode.isValueSuccess) {
             Uri.fromFile(File(outputPath))
         } else {
-            Log.i("FFmpegError", scaleAndPadCommand)
-            Log.i("FFmpegError", "InputPath: $inputPath, OutputPath: $outputPath")
-            Log.d("FFmpegError", "FFmpeg output: ${session.output}")
+            Log.d("FFmpegError adjustAspectRatio", "FFmpeg output: ${session.output}")
             null
         }
     }

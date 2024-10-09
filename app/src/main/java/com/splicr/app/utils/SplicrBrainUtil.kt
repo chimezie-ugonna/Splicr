@@ -30,7 +30,6 @@ import com.splicr.app.viewModel.PromptViewModel
 import com.splicr.app.viewModel.SubscriptionStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import java.io.File
 
 object SplicrBrainUtil {
 
@@ -126,10 +125,6 @@ object SplicrBrainUtil {
                                         navController.navigate("ManageSubscriptionScreen")
                                     }
                                 })
-                            }
-                            val file = File(it?.path ?: "")
-                            if (file.exists()) {
-                                file.delete()
                             }
                         }.onFailure {
                             promptViewModel.removeListItem(item)

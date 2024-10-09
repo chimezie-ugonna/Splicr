@@ -20,8 +20,16 @@ class PromptViewModel : ViewModel() {
     val hasPerformedBottomSheetHapticFeedback = mutableStateOf(false)
     var listItems by mutableStateOf(emptyList<PromptItemData>())
         private set
+    private var areListItemsInitialized = false
 
-    fun updateListItems(uploadFormatStringResource: Int, videoUri: String, context: Context) {
+    fun initializeListItems(uploadFormatStringResource: Int, videoUri: String, context: Context) {
+        if (!areListItemsInitialized) {
+            updateListItems(uploadFormatStringResource, videoUri, context)
+            areListItemsInitialized = true
+        }
+    }
+
+    private fun updateListItems(uploadFormatStringResource: Int, videoUri: String, context: Context) {
         if (mutableVideoUriString != videoUri) {
             mutableVideoUriString = videoUri
 

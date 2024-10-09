@@ -28,7 +28,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
     PurchasesUpdatedListener {
 
     private lateinit var billingClient: BillingClient
-    val subscriptionStatus = MutableLiveData<SubscriptionStatus>()
+    val subscriptionStatus = MutableLiveData<SubscriptionStatus>()//.apply { value = SubscriptionStatus.YEARLY_FREE_TRIAL }
     val renewalDate = MutableLiveData<String?>()
     val expiryDate = MutableLiveData<String?>()
     val purchaseResult = MutableLiveData<Result<Unit>>()

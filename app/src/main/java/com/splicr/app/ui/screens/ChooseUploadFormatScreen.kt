@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalPermissionsApi::class)
-
 package com.splicr.app.ui.screens
 
 import android.net.Uri
@@ -36,7 +34,6 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,7 +52,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.splicr.app.R
 import com.splicr.app.ui.components.AppNameText
 import com.splicr.app.ui.components.CustomSnackBar
@@ -95,7 +91,6 @@ fun ChooseUploadFormatScreen(
                 val snackBarHostState = remember {
                     SnackbarHostState()
                 }
-                val scope = rememberCoroutineScope()
                 val snackBarMessageResource = remember {
                     mutableIntStateOf(0)
                 }
@@ -232,19 +227,19 @@ fun ChooseUploadFormatScreen(
                         }
                     }
 
-                    val videoPickerLauncher =
-                        rememberLauncherForActivityResult(contract = ActivityResultContracts.PickVisualMedia(),
-                            onResult = { uri ->
-                                if (uri != null) {
-                                    navController.navigate(
-                                        "PromptScreen/${selectedUploadFormat.intValue}/${
-                                            Uri.encode(
-                                                uri.toString()
-                                            )
-                                        }"
-                                    )
-                                }
-                            })
+                    val videoPickerLauncher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.PickVisualMedia(),
+                        onResult = { uri ->
+                            if (uri != null) {
+                                navController.navigate(
+                                    "PromptScreen/${selectedUploadFormat.intValue}/${
+                                        Uri.encode(
+                                            uri.toString()
+                                        )
+                                    }"
+                                )
+                            }
+                        })
 
                     PrimaryButton(
                         modifier = Modifier.padding(
