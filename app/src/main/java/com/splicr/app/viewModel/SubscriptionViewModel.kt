@@ -28,7 +28,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
     PurchasesUpdatedListener {
 
     private lateinit var billingClient: BillingClient
-    val subscriptionStatus = MutableLiveData<SubscriptionStatus>()//.apply { value = SubscriptionStatus.YEARLY_FREE_TRIAL }
+    val subscriptionStatus = MutableLiveData<SubscriptionStatus>()
     val renewalDate = MutableLiveData<String?>()
     val expiryDate = MutableLiveData<String?>()
     val purchaseResult = MutableLiveData<Result<Unit>>()
@@ -52,6 +52,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
             override fun onBillingSetupFinished(billingResult: BillingResult) {
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     queryProductDetails()
+                    checkCurrentSubscriptions()
                 } else {
                     purchaseResult.postValue(Result.failure(Exception(application.getString(R.string.billing_setup_failed))))
                 }
@@ -88,6 +89,25 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
         }
     }
 
+    private fun checkCurrentSubscriptions() {
+        val purchaseParams =
+            QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build()
+
+        billingClient.queryPurchasesAsync(purchaseParams) { billingResult, purchases ->
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                if (purchases.isEmpty()) {
+                    subscriptionStatus.postValue(SubscriptionStatus.NONE)
+                } else {
+                    purchases.forEach { purchase ->
+                        handlePurchase(purchase)
+                    }
+                }
+            } else {
+                subscriptionStatus.postValue(SubscriptionStatus.NONE)
+            }
+        }
+    }
+
     fun startSubscriptionPurchase(
         activity: Activity, productDetails: ProductDetails, basePlanId: String
     ): Result<Unit> {
@@ -101,7 +121,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
             )
         }
 
-        if (subscriptionStatus.value != SubscriptionStatus.NONE) {
+        if (subscriptionStatus.value != SubscriptionStatus.NONE) {//This condition will always be true seeing as subscriptionStatus.value has no value.
             return Result.failure(
                 Exception(
                     activity.getString(
@@ -144,6 +164,8 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
             )
         }
     }
+
+    //How do i make it so that any time the app is launched, it checks for the current subscription status and updates accordingly?
 
     override fun onPurchasesUpdated(billingResult: BillingResult, purchases: List<Purchase>?) {
         when (billingResult.responseCode) {

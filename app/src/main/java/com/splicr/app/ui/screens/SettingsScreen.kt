@@ -137,10 +137,6 @@ fun SettingsScreen(
                         mutableStateOf(false)
                     }
 
-                    val sheetState = rememberModalBottomSheetState(
-                        skipPartiallyExpanded = true,
-                        confirmValueChange = { false })
-
                     val showLoaderBottomSheet = rememberSaveable {
                         mutableStateOf(false)
                     }
@@ -215,7 +211,8 @@ fun SettingsScreen(
                         showBottomSheet = showLoaderBottomSheet,
                         isDarkTheme = isDarkTheme,
                         navController = navController,
-                        sheetState = sheetState,
+                        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true,
+                            confirmValueChange = { false }),
                         scope = scope,
                         loaderDescription = loaderDescription.intValue
                     )

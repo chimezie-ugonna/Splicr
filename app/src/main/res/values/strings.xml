@@ -66,7 +66,6 @@
     <string name="email">Email</string>
     <string name="x">X</string>
     <string name="instagram">Instagram</string>
-    <string name="legal_options_gmail_com">legal.options@gmail.com</string>
     <string name="we_could_not_find_any_application_to_handle_that_operation">We could not find any application to handle that operation.</string>
     <string name="your_feedback_is_in_the_cyber_postbox_and_we_re_all_thumbs_up_for_your_input">Your feedback is in the cyber postbox, and we’re all thumbs up for your input!</string>
     <string name="export">Export</string>
@@ -226,5 +225,6 @@
     <string name="renews_at">Renews at %1$s.</string>
     <string name="how_else_would_you_like_to_trim">How else would you like to trim?</string>
     <string name="item_deleted_successfully">Item deleted successfully</string>
+    <string name="splicrapp_gmail_com">splicrapp@gmail.com</string>
 
 </resources>

@@ -240,7 +240,6 @@ fun MediaSplicedScreen(
                             navController = navController,
                             snackBarMessageResource = snackBarMessageResource,
                             snackBarHostState = snackBarHostState,
-                            videoUriString = videoUriString,
                             filePath = filePath.value,
                             canvasItemData = canvasItemData,
                             thumbnailBitmap = thumbnailBitmap.value,

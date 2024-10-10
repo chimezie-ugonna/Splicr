@@ -22,12 +22,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -98,12 +95,10 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun CustomBottomSheet(
+    isDarkTheme: MutableState<Boolean> = remember { mutableStateOf(false) },
     navController: NavHostController,
     label: Int,
     showBottomSheet: MutableState<Boolean>,
-    isDarkTheme: MutableState<Boolean> = remember {
-        mutableStateOf(false)
-    },
     commentValue: MutableState<TextFieldValue> = remember { mutableStateOf(TextFieldValue("")) },
     hasPerformedHapticFeedback: MutableState<Boolean>? = null,
     snackBarMessageResource: MutableState<Int> = remember {
@@ -119,7 +114,6 @@ fun CustomBottomSheet(
     snackBarIsError: MutableState<Boolean> = remember {
         mutableStateOf(true)
     },
-    videoUriString: String? = null,
     filePath: String? = null,
     canvasItemData: CanvasItemData = CanvasItemData(),
     thumbnailBitmap: Bitmap? = null,
@@ -171,9 +165,7 @@ fun CustomBottomSheet(
                         start = dimensionResource(id = R.dimen.spacingXl),
                         top = dimensionResource(id = R.dimen.spacingXl),
                         end = dimensionResource(id = R.dimen.spacingXl),
-                        bottom = dimensionResource(id = R.dimen.spacingXl) + WindowInsets.navigationBars
-                            .asPaddingValues()
-                            .calculateBottomPadding()
+                        bottom = dimensionResource(id = R.dimen.spacingXl)
                     )
             ) {
                 if (loaderList.contains(label).not()) {
@@ -360,20 +352,18 @@ fun CustomBottomSheet(
                             ListItemData(
                                 leadingIconResource = R.drawable.mail,
                                 titleResource = R.string.email,
-                                subText = stringResource(
-                                    R.string.legal_options_gmail_com
-                                )
+                                subText = stringResource(R.string.splicrapp_gmail_com)
                             ), ListItemData(
                                 leadingIconResource = R.drawable.x,
                                 titleResource = R.string.x,
                                 subText = stringResource(
-                                    R.string.legal_options_gmail_com
+                                    R.string.splicrapp_gmail_com
                                 )
                             ), ListItemData(
                                 leadingIconResource = R.drawable.instagram,
                                 titleResource = R.string.instagram,
                                 subText = stringResource(
-                                    R.string.legal_options_gmail_com
+                                    R.string.splicrapp_gmail_com
                                 )
                             )
                         )
@@ -651,11 +641,21 @@ fun CustomBottomSheet(
                             )
                         ) {
                             val listItems = listOf(
-                                listOf(R.drawable.tiktok, "com.zhiliaoapp.musically"),
-                                listOf(R.drawable.facebook, "com.facebook.katana"),
-                                listOf(R.drawable.snapchat, "com.snapchat.android"),
-                                listOf(R.drawable.whatsapp, "com.whatsapp"),
-                                listOf(R.drawable.instagram_2, "com.instagram.android")
+                                listOf(
+                                    R.drawable.tiktok,
+                                    "com.zhiliaoapp.musically",
+                                    "com.zhiliaoapp.musically.go"
+                                ),
+                                listOf(
+                                    R.drawable.facebook, "com.facebook.katana", "com.facebook.lite"
+                                ),
+                                listOf(R.drawable.snapchat, "com.snapchat.android", null),
+                                listOf(R.drawable.whatsapp, "com.whatsapp", null),
+                                listOf(
+                                    R.drawable.instagram_2,
+                                    "com.instagram.android",
+                                    "com.instagram.lite"
+                                )
                             )
                             repeat(listItems.size) { index ->
                                 Image(modifier = Modifier
@@ -667,7 +667,10 @@ fun CustomBottomSheet(
                                             shareVideo(
                                                 context = context,
                                                 videoPath = filePath,
-                                                packageName = listItems[index][1] as String
+                                                packageName = listItems[index][1] as String,
+                                                fallbackPackageName = if (listItems[index][2] != null) {
+                                                    listItems[index][2] as String
+                                                } else null
                                             ) { result, errorMessageResource ->
                                                 if (!result && errorMessageResource != null) {
                                                     snackBarIsError.value = true
