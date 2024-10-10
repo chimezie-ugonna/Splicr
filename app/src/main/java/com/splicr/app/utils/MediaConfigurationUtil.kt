@@ -427,7 +427,11 @@ object MediaConfigurationUtil {
     }
 
     fun shareVideo(
-        context: Context, videoPath: String, packageName: String?, onResult: (Boolean, Int?) -> Unit
+        context: Context,
+        videoPath: String,
+        packageName: String?,
+        fallbackPackageName: String?,
+        onResult: (Boolean, Int?) -> Unit
     ) {
         val videoFile = File(videoPath)
         val videoUri =
@@ -435,18 +439,9 @@ object MediaConfigurationUtil {
 
         packageName?.let {
             if (isPackageInstalled(context, it)) {
-                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "video/mp4"
-                    putExtra(Intent.EXTRA_STREAM, videoUri)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    setPackage(it)
-                }
-                try {
-                    context.startActivity(shareIntent)
-                    onResult(true, null)
-                } catch (e: ActivityNotFoundException) {
-                    onResult(false, R.string.invalid_package_name)
-                }
+                startSharingIntent(context, videoUri, it, onResult)
+            } else if (fallbackPackageName != null && isPackageInstalled(context, fallbackPackageName)) {
+                startSharingIntent(context, videoUri, fallbackPackageName, onResult)
             } else {
                 onResult(false, R.string.we_could_not_find_any_application_to_handle_that_operation)
             }
@@ -455,10 +450,23 @@ object MediaConfigurationUtil {
         }
     }
 
+    private fun startSharingIntent(context: Context, videoUri: Uri, packageName: String, onResult: (Boolean, Int?) -> Unit) {
+        try {
+            context.startActivity(Intent(Intent.ACTION_SEND).apply {
+                type = "video/mp4"
+                putExtra(Intent.EXTRA_STREAM, videoUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                setPackage(packageName)
+            })
+            onResult(true, null)
+        } catch (e: ActivityNotFoundException) {
+            onResult(false, R.string.invalid_package_name)
+        }
+    }
+
     private fun isPackageInstalled(context: Context, packageName: String): Boolean {
-        val packageManager = context.packageManager
         return try {
-            packageManager.getApplicationInfo(packageName, 0).enabled
+            context.packageManager.getApplicationInfo(packageName, 0).enabled
         } catch (e: PackageManager.NameNotFoundException) {
             false
         }
@@ -577,7 +585,8 @@ object MediaConfigurationUtil {
                 // Single range case: trim and adjust resolution
                 val range = trimRanges.first()
                 val tempFilePath = File(tempDirectory, "segment_1.mp4").absolutePath
-                val trimCommand = "-y -i ${videoFile.absolutePath} -ss ${range.startTime} -to ${range.endTime} -c:v mpeg4 -crf 18 -preset slower -c:a copy $tempFilePath"
+                val trimCommand =
+                    "-y -i ${videoFile.absolutePath} -ss ${range.startTime} -to ${range.endTime} -c:v mpeg4 -crf 18 -preset slower -c:a copy $tempFilePath"
 
                 val trimSession = FFmpegKit.execute(trimCommand)
                 if (trimSession.returnCode.isValueSuccess) {
@@ -595,7 +604,8 @@ object MediaConfigurationUtil {
                 val tempFilePaths = mutableListOf<String>()
                 trimRanges.forEachIndexed { index, range ->
                     val tempFilePath = File(tempDirectory, "segment_${index + 1}.mp4").absolutePath
-                    val trimCommand = "-y -i ${videoFile.absolutePath} -ss ${range.startTime} -to ${range.endTime} -c:v mpeg4 -crf 18 -preset slower -c:a copy $tempFilePath"
+                    val trimCommand =
+                        "-y -i ${videoFile.absolutePath} -ss ${range.startTime} -to ${range.endTime} -c:v mpeg4 -crf 18 -preset slower -c:a copy $tempFilePath"
 
                     val trimSession = FFmpegKit.execute(trimCommand)
                     if (trimSession.returnCode.isValueSuccess) {
@@ -631,7 +641,8 @@ object MediaConfigurationUtil {
         targetAspectRatioWidth: Int,
         targetAspectRatioHeight: Int
     ): Uri? {
-        val scaleAndPadCommand = "-i $inputPath -vf \"scale='if(gt(iw/ih,$targetAspectRatioWidth/$targetAspectRatioHeight),$targetAspectRatioWidth,-1)':'if(gt(iw/ih,$targetAspectRatioWidth/$targetAspectRatioHeight),-1,$targetAspectRatioHeight)',pad=$targetAspectRatioWidth:$targetAspectRatioHeight:(ow-iw)/2:(oh-ih)/2\" -c:v mpeg4 -crf 18 -c:a copy $outputPath"
+        val scaleAndPadCommand =
+            "-i $inputPath -vf \"scale='if(gt(iw/ih,$targetAspectRatioWidth/$targetAspectRatioHeight),$targetAspectRatioWidth,-1)':'if(gt(iw/ih,$targetAspectRatioWidth/$targetAspectRatioHeight),-1,$targetAspectRatioHeight)',pad=$targetAspectRatioWidth:$targetAspectRatioHeight:(ow-iw)/2:(oh-ih)/2\" -c:v mpeg4 -crf 18 -c:a copy $outputPath"
 
         val session = FFmpegKit.execute(scaleAndPadCommand)
 
