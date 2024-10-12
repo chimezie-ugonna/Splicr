@@ -221,7 +221,7 @@
     <string name="free_trial_expires_on">Free Trial Expires on %1$s.</string>
     <string name="free_for_7_days_then_starting">Free for 7 days. Then %1$s starting %2$s.</string>
     <string name="free_for_7_days_then">Free for 7 days. Then %1$s.</string>
-    <string name="premium_expires_on">Premium Expires on %1$s.</string>
+    <string name="expires_on">Expires on %1$s.</string>
     <string name="renews_at">Renews at %1$s.</string>
     <string name="how_else_would_you_like_to_trim">How else would you like to trim?</string>
     <string name="item_deleted_successfully">Item deleted successfully</string>

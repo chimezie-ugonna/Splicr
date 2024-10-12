@@ -110,15 +110,9 @@ fun ManageSubscriptionScreen(
                 val currentPlan = rememberSaveable {
                     mutableStateOf(false)
                 }
-                LaunchedEffect(subscriptionStatus.value) {
-                    if (subscriptionStatus.value != SubscriptionStatus.NONE) {
-                        currentPlan.value =
-                            pagerState.currentPage == 0 && subscriptionStatus.value == SubscriptionStatus.MONTHLY_SUBSCRIPTION || pagerState.currentPage == 0 && subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL || pagerState.currentPage == 1 && subscriptionStatus.value == SubscriptionStatus.YEARLY_SUBSCRIPTION || pagerState.currentPage == 1 && subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL
-                    }
-                }
-                LaunchedEffect(subscriptionRenewalDate.value) {
 
-                }
+                currentPlan.value =
+                    pagerState.currentPage == 0 && subscriptionStatus.value == SubscriptionStatus.MONTHLY_SUBSCRIPTION || pagerState.currentPage == 0 && subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL || pagerState.currentPage == 1 && subscriptionStatus.value == SubscriptionStatus.YEARLY_SUBSCRIPTION || pagerState.currentPage == 1 && subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL
 
                 LaunchedEffect(pagerState) {
                     snapshotFlow { pagerState.currentPage }.collectLatest { _ ->
@@ -385,9 +379,9 @@ fun ManageSubscriptionScreen(
                                 } else {
                                     if (subscriptionExpiryDate.value != null) {
                                         if (pagerState.currentPage == 0) {
-                                            if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL) {
+                                            if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_SUBSCRIPTION) {
                                                 stringResource(
-                                                    R.string.premium_expires_on,
+                                                    R.string.expires_on,
                                                     subscriptionExpiryDate.value!!
                                                 )
                                             } else {
@@ -397,9 +391,9 @@ fun ManageSubscriptionScreen(
                                                 )
                                             }
                                         } else {
-                                            if (subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL) {
+                                            if (subscriptionStatus.value == SubscriptionStatus.YEARLY_SUBSCRIPTION) {
                                                 stringResource(
-                                                    R.string.premium_expires_on,
+                                                    R.string.expires_on,
                                                     subscriptionExpiryDate.value!!
                                                 )
                                             } else {
@@ -411,7 +405,7 @@ fun ManageSubscriptionScreen(
                                         }
                                     } else if (subscriptionRenewalDate.value != null) {
                                         if (pagerState.currentPage == 0) {
-                                            if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL) {
+                                            if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_SUBSCRIPTION) {
                                                 stringResource(
                                                     R.string.renews_on_at,
                                                     subscriptionRenewalDate.value!!,
@@ -426,7 +420,7 @@ fun ManageSubscriptionScreen(
                                                 )
                                             }
                                         } else {
-                                            if (subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL) {
+                                            if (subscriptionStatus.value == SubscriptionStatus.YEARLY_SUBSCRIPTION) {
                                                 stringResource(
                                                     R.string.renews_on_at,
                                                     subscriptionRenewalDate.value!!,
@@ -443,7 +437,7 @@ fun ManageSubscriptionScreen(
                                         }
                                     } else {
                                         if (pagerState.currentPage == 0) {
-                                            if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL) {
+                                            if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_SUBSCRIPTION) {
                                                 stringResource(
                                                     R.string.renews_at,
                                                     stringResource(id = R.string._2_500_mth)
@@ -455,7 +449,7 @@ fun ManageSubscriptionScreen(
                                                 )
                                             }
                                         } else {
-                                            if (subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL) {
+                                            if (subscriptionStatus.value == SubscriptionStatus.YEARLY_SUBSCRIPTION) {
                                                 stringResource(
                                                     R.string.renews_at,
                                                     stringResource(id = R.string._27_000_yr)

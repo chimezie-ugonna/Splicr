@@ -132,9 +132,13 @@ object SplicrBrainUtil {
                             promptViewModel.addListItem(
                                 PromptItemData(
                                     message = AnnotatedString(
-                                        text = context.getString(
-                                            R.string.i_m_sorry_but_i_couldn_t_retrieve_any_media_from_the_text_you_provided_please_try_again_with_a_valid_media_url
-                                        )
+                                        text = if (isInternetAvailable(context = context)) {
+                                            context.getString(
+                                                R.string.i_m_sorry_but_i_couldn_t_retrieve_any_media_from_the_text_you_provided_please_try_again_with_a_valid_media_url
+                                            )
+                                        } else {
+                                            context.getString(R.string.it_seems_i_can_t_reach_the_internet_at_the_moment_please_check_your_connection_and_give_it_another_go)
+                                        }
                                     )
                                 )
                             )
@@ -145,9 +149,13 @@ object SplicrBrainUtil {
                         promptViewModel.addListItem(
                             PromptItemData(
                                 message = AnnotatedString(
-                                    text = context.getString(
-                                        R.string.i_m_sorry_but_i_couldn_t_retrieve_any_media_from_the_text_you_provided_please_try_again_with_a_valid_media_url
-                                    )
+                                    text = if (isInternetAvailable(context = context)) {
+                                        context.getString(
+                                            R.string.i_m_sorry_but_i_couldn_t_retrieve_any_media_from_the_text_you_provided_please_try_again_with_a_valid_media_url
+                                        )
+                                    } else {
+                                        context.getString(R.string.it_seems_i_can_t_reach_the_internet_at_the_moment_please_check_your_connection_and_give_it_another_go)
+                                    }
                                 )
                             )
                         )

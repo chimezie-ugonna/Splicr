@@ -121,7 +121,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
             )
         }
 
-        if (subscriptionStatus.value != SubscriptionStatus.NONE) {//This condition will always be true seeing as subscriptionStatus.value has no value.
+        /*if (subscriptionStatus.value != SubscriptionStatus.NONE) {
             return Result.failure(
                 Exception(
                     activity.getString(
@@ -129,7 +129,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
                     )
                 )
             )
-        }
+        }*/
 
         val offerDetails = productDetails.subscriptionOfferDetails?.find {
             it.basePlanId == basePlanId
@@ -164,8 +164,6 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
             )
         }
     }
-
-    //How do i make it so that any time the app is launched, it checks for the current subscription status and updates accordingly?
 
     override fun onPurchasesUpdated(billingResult: BillingResult, purchases: List<Purchase>?) {
         when (billingResult.responseCode) {
