@@ -83,6 +83,7 @@ fun MediaPlayerScreen(
     },
     navController: NavHostController,
     videoUriString: String = "",
+    showDone: Boolean = true,
     canvasItemData: CanvasItemData = CanvasItemData()
 ) {
     ScreenOrientationUtil.SetScreenOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
@@ -183,25 +184,29 @@ fun MediaPlayerScreen(
                     startStringResource = R.string.go_back,
                     startOnClick = { navController.popBackStack() },
                     centerComposable = { AppNameText(modifier = Modifier.align(Alignment.Center)) },
-                    endStringResource = R.string.done,
-                    endOnClick = {
-                        navController.navigate(
-                            route = "${if (Firebase.auth.currentUser != null) "NameYourProjectScreen" else "MediaSplicedScreen"}/${
-                                Uri.encode(
-                                    Gson().toJson(
-                                        canvasItemData
+                    endStringResource = if (showDone) R.string.done else null,
+                    endOnClick = if (showDone) {
+                        {
+                            navController.navigate(
+                                route = "${if (Firebase.auth.currentUser != null) "NameYourProjectScreen" else "MediaSplicedScreen"}/${
+                                    Uri.encode(
+                                        Gson().toJson(
+                                            canvasItemData
+                                        )
                                     )
-                                )
-                            }/${
-                                Uri.encode(
-                                    videoUriString
-                                )
-                            }/MediaPlayerScreen/${
-                                currentPosition.longValue
-                            }/${
-                                isPlaying.value
-                            }"
-                        )
+                                }/${
+                                    Uri.encode(
+                                        videoUriString
+                                    )
+                                }/MediaPlayerScreen/${
+                                    currentPosition.longValue
+                                }/${
+                                    isPlaying.value
+                                }"
+                            )
+                        }
+                    } else {
+                        {}
                     })
 
                 Box(modifier = Modifier
