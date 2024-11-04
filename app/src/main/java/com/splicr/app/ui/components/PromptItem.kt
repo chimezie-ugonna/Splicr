@@ -200,7 +200,9 @@ fun PromptItem(
                                                             viewModel.addListItem(
                                                                 PromptItemData(
                                                                     message = AnnotatedString(
-                                                                        text = context.getString(R.string.how_else_would_you_like_to_trim)
+                                                                        text = context.getString(
+                                                                            R.string.how_else_would_you_like_to_trim
+                                                                        )
                                                                     )
                                                                 )
                                                             )
@@ -223,7 +225,7 @@ fun PromptItem(
                                                                     Uri.encode(
                                                                         uri.toString()
                                                                     )
-                                                                }"
+                                                                }/${true}"
                                                             )
                                                         } else {
                                                             viewModel.addListItem(
@@ -331,16 +333,30 @@ fun PromptItem(
                     }
 
                     thumbnailBitmap != null -> {
-                        Box(
-                            modifier = Modifier
-                                .size(240.dp)
-                                .clip(shape = MaterialTheme.shapes.small)
-                                .border(
-                                    shape = MaterialTheme.shapes.small,
-                                    width = 1.dp,
-                                    color = if (isAuthor) Color(color = 0XFF2C2C2C) else Color(color = 0XFF242620)
+                        Box(modifier = Modifier
+                            .size(240.dp)
+                            .clip(shape = MaterialTheme.shapes.small)
+                            .border(
+                                shape = MaterialTheme.shapes.small,
+                                width = 1.dp,
+                                color = if (isAuthor) Color(color = 0XFF2C2C2C) else Color(color = 0XFF242620)
+                            )
+                            .clickable {
+                                navController.navigate(
+                                    "MediaPlayerScreen/${
+                                        Uri.encode(
+                                            Gson().toJson(
+                                                CanvasItemData(
+                                                )
+                                            )
+                                        )
+                                    }/${
+                                        Uri.encode(
+                                            videoUriString
+                                        )
+                                    }/${false}"
                                 )
-                        ) {
+                            }) {
                             Image(
                                 modifier = Modifier.fillMaxSize(),
                                 bitmap = thumbnailBitmap.asImageBitmap(),

@@ -165,20 +165,24 @@ fun Navigation(
             )
         }
         composable(
-            route = "MediaPlayerScreen/{canvasItemDataJson}/{videoUriString}",
+            route = "MediaPlayerScreen/{canvasItemDataJson}/{videoUriString}/{showDone}",
             arguments = listOf(navArgument("canvasItemDataJson") {
                 type = NavType.StringType
-            }, navArgument("videoUriString") { type = NavType.StringType })
+            },
+                navArgument("videoUriString") { type = NavType.StringType },
+                navArgument("showDone") { type = NavType.BoolType })
         ) {
             val canvasItemData = Gson().fromJson(
                 it.arguments?.getString("canvasItemDataJson"), CanvasItemData::class.java
             )
             val videoUriString = it.arguments?.getString("videoUriString") ?: ""
+            val showDone = it.arguments?.getBoolean("showDone") ?: true
             MediaPlayerScreen(
                 isDarkTheme = isDarkTheme,
                 navController = navController,
                 canvasItemData = canvasItemData,
-                videoUriString = videoUriString
+                videoUriString = videoUriString,
+                showDone = showDone
             )
         }
         composable(

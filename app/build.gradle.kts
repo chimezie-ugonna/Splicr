@@ -17,8 +17,8 @@ android {
         applicationId = "com.splicr.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 21
-        versionName = "6.0.6"
+        versionCode = 22
+        versionName = "6.0.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -59,6 +59,7 @@ android {
             isDebuggable = true
             signingConfig = signingConfigs.getByName("debug")
         }
+        
         create("staging") {
             initWith(getByName("debug"))
             isMinifyEnabled = true
@@ -74,6 +75,7 @@ android {
             isDebuggable = false
             signingConfig = signingConfigs.getByName("staging")
         }
+
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -87,25 +89,31 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_19
         targetCompatibility = JavaVersion.VERSION_19
     }
+
     kotlinOptions {
         jvmTarget = "19"
     }
+
     buildFeatures {
         compose = true
         viewBinding = true
     }
+
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.5"
     }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
     androidResources {
         generateLocaleConfig = true
     }
@@ -213,6 +221,7 @@ easylauncher {
                 )
             )
         }
+
         register("debug") {
             filters(
                 customRibbon(

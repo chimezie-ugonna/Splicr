@@ -165,7 +165,7 @@
     <string name="an_error_occurred_while_saving_to_your_account_failed_to_upload_video">An error occurred while saving to your account. Failed to upload video</string>
     <string name="an_error_occurred_while_saving_to_your_account_failed_to_upload_thumbnail">An error occurred while saving to your account. Failed to upload thumbnail</string>
     <string name="ai_identity_instruction">You are an AI that extracts start and end times for video trimming from a prompt.</string>
-    <string name="ai_format_instruction">Format times as:\nStart time: HH:MM:SS\nEnd time: HH:MM:SS.\nAnd include all timestamp sets if multiple.</string>
+    <string name="ai_format_instruction">Format times as:\nStart time: HH:MM:SS\nEnd time: HH:MM:SS.\nAssume input times like “1:10” are in MM:SS format and respond as “00:01:10” unless stated as hours. Always respond in HH:MM:SS.\nInclude all timestamp sets if multiple.</string>
     <string name="ai_duration_instruction">The video\'s duration is %1$s (HH:MM:SS).</string>
     <string name="ai_invalid_response_instruction">If the requested start or end time is missing, unrealistic, in a larger unit than the video’s duration (e.g., minutes for a duration in seconds), or exceeds the total duration, consider it invalid. Do not provide times and respond to the prompt with a message explaining why the request is invalid.</string>
     <string name="ai_prompt_instruction">Here is the prompt: %1$s</string>
