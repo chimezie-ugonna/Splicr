@@ -48,13 +48,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -579,23 +584,56 @@ fun PremiumOptions(prize: Int, plan: Int) {
         }
 
         item {
-            Text(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(
-                        top = dimensionResource(
-                            id = R.dimen.spacingXs
-                        )
+            if (prize == R.string._2_500_month) {
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .padding(
+                            top = dimensionResource(
+                                id = R.dimen.spacingXs
+                            )
+                        ),
+                    text = stringResource(
+                        prize
                     ),
-                text = stringResource(
-                    prize
-                ),
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Start
-            )
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Start
+                )
+            } else {
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .padding(
+                            top = dimensionResource(
+                                id = R.dimen.spacingXs
+                            )
+                        ),
+                    text = buildAnnotatedString {
+                        append(
+                            stringResource(
+                                prize
+                            )
+                        )
+                        withStyle(
+                            style = SpanStyle(
+                                baselineShift = BaselineShift.Superscript,
+                                color = Color(0XFFFAEECD),
+                                fontWeight = FontWeight.Normal
+                            )
+                        ) {
+                            append(" 10% OFF")
+                        }
+                    },
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Start
+                )
+            }
 
             Text(
                 modifier = Modifier
