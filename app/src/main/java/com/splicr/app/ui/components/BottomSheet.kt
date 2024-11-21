@@ -53,6 +53,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -78,6 +79,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.google.accompanist.placeholder.PlaceholderHighlight
@@ -158,6 +161,13 @@ fun CustomBottomSheet(
             ),
             modifier = Modifier.statusBarsPadding()
         ) {
+            val view2 = LocalView.current
+            (view2.parent as? DialogWindowProvider)?.window?.let { window ->
+                SideEffect {
+                    WindowCompat.getInsetsController(window, view2).isAppearanceLightStatusBars =
+                        false
+                }
+            }
             Column(
                 modifier = Modifier
                     .wrapContentSize()

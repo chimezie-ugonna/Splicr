@@ -1,7 +1,6 @@
 package com.splicr.app.ui.theme
 
 import android.app.Activity
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -45,39 +44,29 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun SplicrTheme(
     isSystemInDarkTheme: Boolean = true,
-    colorScheme: ColorScheme = when {
-        isSystemInDarkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    },
-    statusBarColor: Int = Color.Transparent.toArgb(),
-    isAppearanceLightStatusBars: Boolean? = false,
-    navigationBarColor: Int = colorScheme.background.toArgb(),
-    isAppearanceLightNavigationBars: Boolean? = true,
+    statusBarColor: Color = Color.Transparent,
+    isAppearanceLightStatusBars: Boolean = false,
+    navigationBarColor: Color = brandBlack,
+    isAppearanceLightNavigationBars: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val colorScheme = if (isSystemInDarkTheme) {
+        DarkColorScheme
+    } else {
+        LightColorScheme
+    }
 
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = statusBarColor
-            if (isAppearanceLightStatusBars != null) {
-                WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars =
-                    isAppearanceLightStatusBars
-            } else {
-                WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars =
-                    !isSystemInDarkTheme
-            }
-            window.navigationBarColor = navigationBarColor
-            if (isAppearanceLightNavigationBars != null) {
-                WindowInsetsControllerCompat(
-                    window, window.decorView
-                ).isAppearanceLightNavigationBars = !isAppearanceLightNavigationBars
-            } else {
-                WindowInsetsControllerCompat(
-                    window, window.decorView
-                ).isAppearanceLightNavigationBars = !isSystemInDarkTheme
-            }
+            window.statusBarColor = statusBarColor.toArgb()
+            WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars =
+                isAppearanceLightStatusBars
+            window.navigationBarColor = navigationBarColor.toArgb()
+            WindowInsetsControllerCompat(
+                window, window.decorView
+            ).isAppearanceLightNavigationBars = !isAppearanceLightNavigationBars
         }
     }
 
