@@ -1,11 +1,10 @@
-• Fixed interruptions during scrolling.
-• Subscription issues resolved in certain regions.
-• Video processing stops when exiting the screen.
-• Play and share videos directly from the home page.
-• Videos >30s can be selected, but premium is required for output.
-• Reach support via WhatsApp/Facebook.
-• Copy and paste text during AI conversations.
-• AI now notifies if video processing is delayed.
-• 4K feature availability indication.
-
-Update now and share feedback in-app or on the Play Store.
+• Fixed scrolling interruptions on the prompt screen.
+• Subscription issues resolved in some regions.
+• Video processing stops when exiting.
+• Play/share videos from the home page.
+• Videos >30 sec can be selected, but premium is required for output.
+• Support via WhatsApp/Facebook; email removed.
+• Copy/paste text during AI chats.
+• Fixed fallback package names.
+• AI now notifies on video delays.
+• 4K feature availability alert.
