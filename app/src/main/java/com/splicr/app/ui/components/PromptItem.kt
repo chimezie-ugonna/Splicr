@@ -1,5 +1,7 @@
 package com.splicr.app.ui.components
 
+import android.content.ClipboardManager
+import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.animation.core.LinearEasing
@@ -13,6 +15,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,14 +26,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -40,16 +44,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -62,8 +68,13 @@ import com.splicr.app.data.TrimRangeData
 import com.splicr.app.utils.MediaConfigurationUtil.convertDimensionsToAspectRatio
 import com.splicr.app.utils.MediaConfigurationUtil.getAllVideoMetadata
 import com.splicr.app.utils.MediaConfigurationUtil.processVideo
+import com.splicr.app.utils.SplicrBrainUtil.startWaitingMessageGeneration
 import com.splicr.app.viewModel.PromptViewModel
+import com.splicr.app.viewModel.SubscriptionStatus
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
 fun PromptItem(
@@ -75,20 +86,29 @@ fun PromptItem(
     message: AnnotatedString,
     showCanvasOptions: Boolean,
     isLoading: Boolean = false,
-    listState: LazyListState? = null,
     trimRanges: List<TrimRangeData>? = null,
     isProcessing: MutableState<Boolean>? = null,
     viewModel: PromptViewModel? = null,
     navController: NavHostController,
+    subscriptionStatus: State<SubscriptionStatus?>,
+    snackBarMessageResource: MutableIntState,
+    snackBarMessage: MutableState<String>,
+    scope: CoroutineScope = rememberCoroutineScope(),
+    snackBarHostState: SnackbarHostState,
+    snackBarIsError: MutableState<Boolean>,
     aspectRatioChoiceList: List<AspectRatioChoiceItemData>? = null,
-    onClick: (Int) -> Unit
+    onClick: ((Int) -> Unit)?
 ) {
-    val layoutDirection = if (isAuthor) LayoutDirection.Rtl else LayoutDirection.Ltr
-    CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
+    val context = LocalContext.current
+    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .wrapContentHeight(),
+        horizontalArrangement = if (isAuthor) Arrangement.End else Arrangement.Start
+    ) {
         Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .wrapContentHeight(),
+            modifier = Modifier.wrapContentSize(),
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(space = dimensionResource(id = R.dimen.spacingXs))
         ) {
@@ -108,51 +128,98 @@ fun PromptItem(
                     contentDescription = null
                 )
             }
-            val context = LocalContext.current
-            val scope = rememberCoroutineScope()
-            Box(
-                modifier = Modifier
-                    .wrapContentSize()
-                    .clip(shape = MaterialTheme.shapes.small)
-                    .background(color = if (isAuthor) Color(color = 0XFF2C2C2C) else Color(color = 0XFF242620))
-                    .padding(
-                        all = if (showCanvasOptions || thumbnailBitmap == null) dimensionResource(
-                            id = R.dimen.spacingSm
-                        ) else 0.dp
-                    ), contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier
+                .wrapContentSize()
+                .clip(shape = MaterialTheme.shapes.small)
+                .background(color = if (isAuthor) Color(color = 0XFF2C2C2C) else Color(color = 0XFF242620))
+                .then(if (isAuthor && message.isNotEmpty()) {
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures(onLongPress = {
+                            val clip = android.content.ClipData.newPlainText(
+                                context.getString(R.string.copied_to_clipboard), message
+                            )
+                            clipboardManager.setPrimaryClip(clip)
+                            snackBarIsError.value = false
+                            snackBarMessageResource.intValue = R.string.copied_to_clipboard
+                            snackBarMessage.value = ""
+                            scope.launch {
+                                snackBarHostState.showSnackbar(
+                                    ""
+                                )
+                            }
+                        })
+                    }
+                } else {
+                    Modifier
+                })
+                .padding(
+                    all = if (showCanvasOptions || thumbnailBitmap == null) dimensionResource(
+                        id = R.dimen.spacingSm
+                    ) else 0.dp
+                ), contentAlignment = Alignment.Center) {
 
                 when {
                     showCanvasOptions && aspectRatioChoiceList != null -> {
-                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                            Column {
-                                Text(
-                                    modifier = Modifier.wrapContentSize(),
-                                    text = stringResource(R.string.select_your_aspect_ratio),
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Normal,
-                                    textAlign = TextAlign.Start
-                                )
-                                val isTappable = isProcessing != null && !isProcessing.value
-                                repeat(aspectRatioChoiceList.size) { index ->
-                                    val aspectRatioWidth =
-                                        aspectRatioChoiceList[index].aspectRatioWidth
-                                    val aspectRatioHeight =
-                                        aspectRatioChoiceList[index].aspectRatioHeight
-                                    Row(modifier = Modifier
-                                        .fillMaxWidth()
-                                        .wrapContentHeight()
-                                        .padding(top = if (index != 0) dimensionResource(id = R.dimen.spacingXs) else 10.dp)
-                                        .clip(shape = MaterialTheme.shapes.medium)
-                                        .alpha(if (isTappable) 1f else 0.3f)
-                                        .border(
-                                            width = 1.dp,
-                                            color = MaterialTheme.colorScheme.surface,
-                                            shape = MaterialTheme.shapes.medium
-                                        )
-                                        .clickable(enabled = isTappable) {
-                                            if (trimRanges != null && videoUriString != null && isProcessing != null && !isProcessing.value && viewModel != null) {
+                        Column {
+                            Text(
+                                modifier = Modifier.wrapContentSize(),
+                                text = stringResource(R.string.select_your_aspect_ratio),
+                                color = MaterialTheme.colorScheme.onBackground,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Normal,
+                                textAlign = TextAlign.Start
+                            )
+                            val isTappable = isProcessing != null && !isProcessing.value
+                            repeat(aspectRatioChoiceList.size) { index ->
+                                val aspectRatioWidth = aspectRatioChoiceList[index].aspectRatioWidth
+                                val aspectRatioHeight =
+                                    aspectRatioChoiceList[index].aspectRatioHeight
+                                val primaryColor = MaterialTheme.colorScheme.primary
+                                Row(modifier = Modifier
+                                    .fillMaxWidth()
+                                    .wrapContentHeight()
+                                    .padding(top = if (index != 0) dimensionResource(id = R.dimen.spacingXs) else 10.dp)
+                                    .clip(shape = MaterialTheme.shapes.medium)
+                                    .alpha(if (isTappable) 1f else 0.3f)
+                                    .border(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.surface,
+                                        shape = MaterialTheme.shapes.medium
+                                    )
+                                    .clickable(enabled = isTappable) {
+                                        if (trimRanges != null && videoUriString != null && isProcessing != null && !isProcessing.value && viewModel != null) {
+                                            if (subscriptionStatus.value == SubscriptionStatus.NONE && calculateTotalDurationInSeconds(
+                                                    ranges = trimRanges
+                                                ) > 30000
+                                            ) {
+                                                val tagAndAnnotation = "get_premium"
+                                                val annotatedString = buildAnnotatedString {
+                                                    append(context.getString(R.string.it_looks_like_you_re_trying_to_process_a_video_longer_than_30_seconds_this_feature_is_only_available_on_our_premium_plans_to_unlock_the_full_power_of_extended_video_editing_consider_getting_one_of_our))
+                                                    withStyle(style = SpanStyle(color = primaryColor)) {
+                                                        pushStringAnnotation(
+                                                            tag = tagAndAnnotation,
+                                                            annotation = tagAndAnnotation
+                                                        )
+                                                        append(context.getString(R.string.premium_plans))
+                                                        pop()
+                                                    }
+                                                    append(context.getString(R.string.we_d_love_to_help_you_create_amazing_content))
+                                                }
+                                                viewModel.addListItem(PromptItemData(
+                                                    message = annotatedString
+                                                ) {
+                                                    annotatedString
+                                                        .getStringAnnotations(
+                                                            tag = tagAndAnnotation,
+                                                            start = it,
+                                                            end = it
+                                                        )
+                                                        .firstOrNull()
+                                                        ?.let {
+                                                            navController.navigate("ManageSubscriptionScreen")
+                                                        }
+                                                })
+                                            } else {
                                                 viewModel.addListItem(
                                                     PromptItemData(
                                                         message = AnnotatedString(
@@ -167,72 +234,98 @@ fun PromptItem(
                                                     isLoading = true
                                                 )
                                                 viewModel.addListItem(item)
-                                                scope.launch {
-                                                    listState?.animateScrollToItem(
-                                                        viewModel.listItems.size - 1
-                                                    )
-                                                }
+
+                                                startWaitingMessageGeneration(
+                                                    context = context,
+                                                    promptViewModel = viewModel,
+                                                    scope = scope
+                                                )
+
                                                 processVideo(
                                                     uri = Uri.parse(videoUriString),
                                                     trimRanges = trimRanges,
                                                     context = context,
                                                     aspectRatioWidth = aspectRatioWidth,
-                                                    aspectRatioHeight = aspectRatioHeight
+                                                    aspectRatioHeight = aspectRatioHeight,
+                                                    scope = scope
                                                 ) { uri ->
                                                     viewModel.removeListItem(item)
                                                     if (uri != null) {
-                                                        val size = getAllVideoMetadata(
-                                                            context = context, videoUri = uri
-                                                        )?.fileSize
-                                                        val duration2 = getAllVideoMetadata(
-                                                            context = context, videoUri = uri
-                                                        )?.duration ?: 0
-                                                        if (size != null) {
-                                                            viewModel.addListItem(
-                                                                PromptItemData(
-                                                                    message = AnnotatedString(
-                                                                        text = context.getString(
-                                                                            R.string.done
-                                                                        )
-                                                                    )
-                                                                )
-                                                            )
-                                                            viewModel.addListItem(
-                                                                PromptItemData(
-                                                                    message = AnnotatedString(
-                                                                        text = context.getString(
-                                                                            R.string.how_else_would_you_like_to_trim
-                                                                        )
-                                                                    )
-                                                                )
-                                                            )
-                                                            navController.navigate(
-                                                                "MediaPlayerScreen/${
-                                                                    Uri.encode(
-                                                                        Gson().toJson(
-                                                                            CanvasItemData(
-                                                                                aspectRatioTypeKey = context.getString(
-                                                                                    aspectRatioChoiceList[index].typeStringResource
-                                                                                ),
-                                                                                aspectRatioWidth = aspectRatioWidth,
-                                                                                aspectRatioHeight = aspectRatioHeight,
-                                                                                size = size,
-                                                                                duration = duration2
+                                                        if (uri != Uri.EMPTY) {
+                                                            val size = getAllVideoMetadata(
+                                                                context = context,
+                                                                videoUri = uri
+                                                            )?.fileSize
+                                                            val duration2 = getAllVideoMetadata(
+                                                                context = context,
+                                                                videoUri = uri
+                                                            )?.duration ?: 0
+                                                            if (size != null) {
+                                                                viewModel.addListItem(
+                                                                    PromptItemData(
+                                                                        message = AnnotatedString(
+                                                                            text = context.getString(
+                                                                                R.string.done
                                                                             )
                                                                         )
                                                                     )
-                                                                }/${
-                                                                    Uri.encode(
-                                                                        uri.toString()
+                                                                )
+                                                                viewModel.addListItem(
+                                                                    PromptItemData(
+                                                                        message = AnnotatedString(
+                                                                            text = context.getString(
+                                                                                R.string.how_else_would_you_like_to_trim
+                                                                            )
+                                                                        )
                                                                     )
-                                                                }/${true}"
-                                                            )
+                                                                )
+                                                                navController.navigate(
+                                                                    "MediaPlayerScreen/${
+                                                                        Uri.encode(
+                                                                            Gson().toJson(
+                                                                                CanvasItemData(
+                                                                                    aspectRatioTypeKey = context.getString(
+                                                                                        aspectRatioChoiceList[index].typeStringResource
+                                                                                    ),
+                                                                                    aspectRatioWidth = aspectRatioWidth,
+                                                                                    aspectRatioHeight = aspectRatioHeight,
+                                                                                    size = size,
+                                                                                    duration = duration2
+                                                                                )
+                                                                            )
+                                                                        )
+                                                                    }/${
+                                                                        Uri.encode(
+                                                                            uri.toString()
+                                                                        )
+                                                                    }/${true}"
+                                                                )
+                                                            } else {
+                                                                viewModel.addListItem(
+                                                                    PromptItemData(
+                                                                        message = AnnotatedString(
+                                                                            text = context.getString(
+                                                                                R.string.oops_i_ran_into_an_issue_while_processing_your_request_let_s_try_that_again_how_would_you_like_me_to_trim
+                                                                            )
+                                                                        )
+                                                                    )
+                                                                )
+                                                            }
                                                         } else {
                                                             viewModel.addListItem(
                                                                 PromptItemData(
                                                                     message = AnnotatedString(
                                                                         text = context.getString(
-                                                                            R.string.oops_i_ran_into_an_issue_while_processing_your_request_let_s_try_that_again_how_would_you_like_me_to_trim
+                                                                            R.string.the_operation_was_interrupted_if_this_wasn_t_intentional_you_can_try_again
+                                                                        )
+                                                                    )
+                                                                )
+                                                            )
+                                                            viewModel.addListItem(
+                                                                PromptItemData(
+                                                                    message = AnnotatedString(
+                                                                        text = context.getString(
+                                                                            R.string.how_would_you_like_to_trim
                                                                         )
                                                                     )
                                                                 )
@@ -250,81 +343,76 @@ fun PromptItem(
                                                         )
                                                     }
                                                     isProcessing.value = false
-                                                    scope.launch {
-                                                        listState?.animateScrollToItem(
-                                                            viewModel.listItems.size - 1
-                                                        )
-                                                    }
                                                 }
                                             }
                                         }
-                                        .background(color = Color.Transparent)
-                                        .padding(
-                                            all = dimensionResource(id = R.dimen.spacingMd)
-                                        ), verticalAlignment = Alignment.CenterVertically
+                                    }
+                                    .background(color = Color.Transparent)
+                                    .padding(
+                                        all = dimensionResource(id = R.dimen.spacingMd)
+                                    ), verticalAlignment = Alignment.CenterVertically
 
+                                ) {
+                                    Column(
+                                        Modifier
+                                            .weight(1f)
+                                            .wrapContentHeight()
+                                            .padding(
+                                                end = if (aspectRatioChoiceList[index].iconResourceList != null) dimensionResource(
+                                                    id = R.dimen.spacingMd
+                                                ) else 0.dp
+                                            ), verticalArrangement = Arrangement.spacedBy(
+                                            space = dimensionResource(
+                                                id = R.dimen.spacingXs
+                                            )
+                                        )
                                     ) {
-                                        Column(
-                                            Modifier
-                                                .weight(1f)
-                                                .wrapContentHeight()
-                                                .padding(
-                                                    end = if (aspectRatioChoiceList[index].iconResourceList != null) dimensionResource(
-                                                        id = R.dimen.spacingMd
-                                                    ) else 0.dp
-                                                ), verticalArrangement = Arrangement.spacedBy(
+                                        Text(
+                                            modifier = Modifier.wrapContentSize(),
+                                            text = stringResource(id = aspectRatioChoiceList[index].typeStringResource),
+                                            color = MaterialTheme.colorScheme.onBackground,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            textAlign = TextAlign.Start
+                                        )
+                                        Text(
+                                            modifier = Modifier.wrapContentSize(),
+                                            text = convertDimensionsToAspectRatio(
+                                                context = context,
+                                                width = aspectRatioWidth,
+                                                height = aspectRatioHeight
+                                            ),
+                                            color = MaterialTheme.colorScheme.tertiary,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Normal,
+                                            textAlign = TextAlign.Start
+                                        )
+                                    }
+
+                                    val iconResourceList =
+                                        aspectRatioChoiceList[index].iconResourceList
+                                    if (iconResourceList != null) {
+                                        Row(
+                                            modifier = Modifier.wrapContentSize(),
+                                            horizontalArrangement = Arrangement.spacedBy(
                                                 space = dimensionResource(
                                                     id = R.dimen.spacingXs
                                                 )
                                             )
                                         ) {
-                                            Text(
-                                                modifier = Modifier.wrapContentSize(),
-                                                text = stringResource(id = aspectRatioChoiceList[index].typeStringResource),
-                                                color = MaterialTheme.colorScheme.onBackground,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontSize = 15.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                textAlign = TextAlign.Start
-                                            )
-                                            Text(
-                                                modifier = Modifier.wrapContentSize(),
-                                                text = convertDimensionsToAspectRatio(
-                                                    context = context,
-                                                    width = aspectRatioWidth,
-                                                    height = aspectRatioHeight
-                                                ),
-                                                color = MaterialTheme.colorScheme.tertiary,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Normal,
-                                                textAlign = TextAlign.Start
-                                            )
-                                        }
-
-                                        val iconResourceList =
-                                            aspectRatioChoiceList[index].iconResourceList
-                                        if (iconResourceList != null) {
-                                            Row(
-                                                modifier = Modifier.wrapContentSize(),
-                                                horizontalArrangement = Arrangement.spacedBy(
-                                                    space = dimensionResource(
-                                                        id = R.dimen.spacingXs
-                                                    )
+                                            repeat(iconResourceList.size) { index ->
+                                                Image(
+                                                    modifier = Modifier.size(
+                                                        size = dimensionResource(
+                                                            id = R.dimen.spacingMd
+                                                        )
+                                                    ),
+                                                    painter = painterResource(id = iconResourceList[index]),
+                                                    contentDescription = null
                                                 )
-                                            ) {
-                                                repeat(iconResourceList.size) { index ->
-                                                    Image(
-                                                        modifier = Modifier.size(
-                                                            size = dimensionResource(
-                                                                id = R.dimen.spacingMd
-                                                            )
-                                                        ),
-                                                        painter = painterResource(id = iconResourceList[index]),
-                                                        contentDescription = null
-                                                    )
-                                                }
-
                                             }
+
                                         }
                                     }
                                 }
@@ -378,16 +466,14 @@ fun PromptItem(
                                     .padding(all = dimensionResource(id = R.dimen.spacingSm)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                                    Text(
-                                        modifier = Modifier.wrapContentSize(),
-                                        text = duration ?: stringResource(id = R.string._0_00),
-                                        color = MaterialTheme.colorScheme.onBackground,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Normal,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
+                                Text(
+                                    modifier = Modifier.wrapContentSize(),
+                                    text = duration ?: stringResource(id = R.string._0_00),
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Normal,
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         }
                     }
@@ -428,33 +514,46 @@ fun PromptItem(
                     }
 
                     else -> {
-                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                            if (onClick == {}) {
-                                Text(
-                                    modifier = Modifier.wrapContentSize(),
-                                    text = message,
+                        if (onClick == null) {
+                            Text(
+                                modifier = Modifier.wrapContentSize(),
+                                text = message,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Normal,
+                                textAlign = TextAlign.Start
+                            )
+                        } else {
+                            ClickableText(
+                                text = message,
+                                onClick = onClick,
+                                modifier = Modifier.wrapContentSize(),
+                                style = MaterialTheme.typography.labelSmall.copy(
                                     color = MaterialTheme.colorScheme.onBackground,
-                                    style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Normal,
                                     textAlign = TextAlign.Start
                                 )
-                            } else {
-                                ClickableText(
-                                    text = message,
-                                    onClick = onClick,
-                                    modifier = Modifier.wrapContentSize(),
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        color = MaterialTheme.colorScheme.onBackground,
-                                        fontWeight = FontWeight.Normal,
-                                        textAlign = TextAlign.Start
-                                    )
-                                )
-                            }
+                            )
                         }
                     }
                 }
 
             }
+        }
+    }
+}
+
+fun calculateTotalDurationInSeconds(ranges: List<TrimRangeData>): Long {
+    val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+
+    return ranges.fold(0L) { total, range ->
+        val start = timeFormat.parse(range.startTime)
+        val end = timeFormat.parse(range.endTime)
+
+        if (start != null && end != null) {
+            total + (end.time - start.time)
+        } else {
+            total
         }
     }
 }

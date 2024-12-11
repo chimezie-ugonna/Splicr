@@ -49,7 +49,8 @@ object FirestoreQueryUtil {
 
     suspend fun deleteUserDataAndAccount(context: Context): Result<Boolean> {
         val user =
-            Firebase.auth.currentUser ?: return Result.failure(Exception(context.getString(R.string.no_account_signed_in)))
+            Firebase.auth.currentUser
+                ?: return Result.failure(Exception(context.getString(R.string.no_account_signed_in)))
         val userId = user.uid
         val firestore = Firebase.firestore
 

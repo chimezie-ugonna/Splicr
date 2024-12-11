@@ -57,7 +57,6 @@ import com.splicr.app.ui.components.CustomTopNavigationBar
 import com.splicr.app.ui.components.customModifier
 import com.splicr.app.ui.theme.SplicrTheme
 import com.splicr.app.utils.FirestoreQueryUtil.deleteUserDataAndAccount
-import com.splicr.app.viewModel.HomeViewModel
 import com.splicr.app.viewModel.SettingsViewModel
 import com.splicr.app.viewModel.SubscriptionStatus
 import com.splicr.app.viewModel.SubscriptionViewModel
@@ -73,7 +72,6 @@ fun SettingsScreen(
     },
     navController: NavHostController,
     settingsViewModel: SettingsViewModel = viewModel(),
-    homeViewModel: HomeViewModel = viewModel(),
     subscriptionViewModel: SubscriptionViewModel = viewModel()
 ) {
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
@@ -288,7 +286,6 @@ fun SettingsScreen(
                                             ClearCredentialStateRequest()
                                         )
                                     auth.signOut()
-                                    homeViewModel.stopListening()
                                     showLoaderBottomSheet.value = false
                                     snackBarIsError.value = false
                                     snackBarMessageResource.intValue =
@@ -437,7 +434,6 @@ fun SettingsScreen(
                                                         )
                                                 }
                                                 auth.signOut()
-                                                homeViewModel.stopListening()
                                             } else {
                                                 snackBarIsError.value = true
                                                 snackBarMessageResource.intValue =

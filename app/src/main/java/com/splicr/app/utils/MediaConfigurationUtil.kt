@@ -40,6 +40,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import kotlin.coroutines.cancellation.CancellationException
 
 object MediaConfigurationUtil {
 
@@ -440,17 +441,24 @@ object MediaConfigurationUtil {
         packageName?.let {
             if (isPackageInstalled(context, it)) {
                 startSharingIntent(context, videoUri, it, onResult)
-            } else if (fallbackPackageName != null && isPackageInstalled(context, fallbackPackageName)) {
+            } else if (fallbackPackageName != null && isPackageInstalled(
+                    context, fallbackPackageName
+                )
+            ) {
                 startSharingIntent(context, videoUri, fallbackPackageName, onResult)
             } else {
                 onResult(false, R.string.we_could_not_find_any_application_to_handle_that_operation)
             }
         } ?: run {
-            onResult(false, R.string.invalid_package_name)
+            onResult(
+                false, R.string.something_went_wrong_we_could_not_successfully_handle_that_operation
+            )
         }
     }
 
-    private fun startSharingIntent(context: Context, videoUri: Uri, packageName: String, onResult: (Boolean, Int?) -> Unit) {
+    private fun startSharingIntent(
+        context: Context, videoUri: Uri, packageName: String, onResult: (Boolean, Int?) -> Unit
+    ) {
         try {
             context.startActivity(Intent(Intent.ACTION_SEND).apply {
                 type = "video/mp4"
@@ -459,15 +467,17 @@ object MediaConfigurationUtil {
                 setPackage(packageName)
             })
             onResult(true, null)
-        } catch (e: ActivityNotFoundException) {
-            onResult(false, R.string.invalid_package_name)
+        } catch (_: ActivityNotFoundException) {
+            onResult(
+                false, R.string.something_went_wrong_we_could_not_successfully_handle_that_operation
+            )
         }
     }
 
     private fun isPackageInstalled(context: Context, packageName: String): Boolean {
         return try {
             context.packageManager.getApplicationInfo(packageName, 0).enabled
-        } catch (e: PackageManager.NameNotFoundException) {
+        } catch (_: PackageManager.NameNotFoundException) {
             false
         }
     }
@@ -546,7 +556,7 @@ object MediaConfigurationUtil {
                 }
             }
             file
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -557,13 +567,18 @@ object MediaConfigurationUtil {
         context: Context,
         aspectRatioWidth: Int,
         aspectRatioHeight: Int,
+        scope: CoroutineScope,
         onCompletion: (Uri?) -> Unit
     ) {
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.launch(Dispatchers.IO) {
             val result =
                 processVideoInternal(uri, trimRanges, context, aspectRatioWidth, aspectRatioHeight)
             withContext(Dispatchers.Main) {
                 onCompletion(result)
+            }
+        }.invokeOnCompletion {
+            if (it is CancellationException) {
+                onCompletion(Uri.EMPTY)
             }
         }
     }

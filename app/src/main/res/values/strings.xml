@@ -63,7 +63,6 @@
     <string name="your_comment_optional">Your comment (Optional)</string>
     <string name="send">Send</string>
     <string name="describe_your_experience">Describe your experience</string>
-    <string name="email">Email</string>
     <string name="x">X</string>
     <string name="instagram">Instagram</string>
     <string name="we_could_not_find_any_application_to_handle_that_operation">We could not find any application to handle that operation.</string>
@@ -112,6 +111,7 @@
     <string name="stop">Stop</string>
     <string name="scroll_to_the_bottom">Scroll to the bottom</string>
     <string name="please_input_the_url_of_the_video_you_would_like_to_trim">Please input the URL of the video you would like to trim.</string>
+    <string name="please_input_the_url_of_the_video_you_would_like_to_trim_again">Please input the URL of the video you would like to trim again.</string>
     <string name="monthly_basic_with_free_trial">monthly-basic-with-free-trial</string>
     <string name="yearly_basic_with_free_trial">yearly-basic-with-free-trial</string>
     <string name="we_need_access_to_your_media_files_to_allow_you_to_select_and_process_videos_please_grant_the_permission_to_enable_access">We need access to your media files to allow you to select and process videos. Please grant the permission to enable access.</string>
@@ -226,5 +226,16 @@
     <string name="how_else_would_you_like_to_trim">How else would you like to trim?</string>
     <string name="item_deleted_successfully">Item deleted successfully</string>
     <string name="splicrapp_gmail_com">splicrapp@gmail.com</string>
+    <string name="whatsapp">WhatsApp</string>
+    <string name="support_number">+2348096449050</string>
+    <string name="facebook">Facebook</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
+    <string name="for_high_quality_get_splicr_premium">For high-quality, get Splicr Premium</string>
+    <string name="_4k_media_may_use_codecs_not_supported_on_all_devices_check_compatibility_before_exporting">4K media may use codecs not supported on all devices. Check compatibility before exporting.</string>
+    <string name="something_went_wrong_we_could_not_successfully_handle_that_operation">Something went wrong, we could not successfully handle that operation.</string>
+    <string name="waiting_message_prompt">Respond in the first person with a concise and unique waiting message that reassures a user with positivity, empathy, and a sense of ongoing progress, without revealing specific tasks or technical details. Ensure your response differs completely from your previous response, avoiding repetition and similar phrasing.</string>
+    <string name="this_was_your_previous_response">This was your previous response: %1$s</string>
+    <string name="the_operation_was_interrupted_if_this_wasn_t_intentional_you_can_try_again">The operation was interrupted. If this wasn’t intentional, you can try again.</string>
+    <string name="share_video_via">Share video via</string>
 
 </resources>

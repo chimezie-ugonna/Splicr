@@ -5,6 +5,7 @@ import com.project.starter.easylauncher.filter.ColorRibbonFilter
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.compose.compiler)
     id("com.google.gms.google-services")
     id("com.starter.easylauncher") version "6.2.0"
 }
@@ -17,8 +18,8 @@ android {
         applicationId = "com.splicr.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 24
-        versionName = "6.1.1"
+        versionCode = 25
+        versionName = "7.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -59,7 +60,7 @@ android {
             isDebuggable = true
             signingConfig = signingConfigs.getByName("debug")
         }
-        
+
         create("staging") {
             initWith(getByName("debug"))
             isMinifyEnabled = true

@@ -79,7 +79,7 @@ import com.splicr.app.utils.MediaConfigurationUtil.exportVideo
 import com.splicr.app.utils.MediaConfigurationUtil.formatFileSize
 import com.splicr.app.utils.MediaConfigurationUtil.getAllVideoMetadata
 import com.splicr.app.utils.MediaConfigurationUtil.getOutputFilePath
-import com.splicr.app.viewModel.MediaSplicedViewModel
+import com.splicr.app.viewModel.HomeViewModel
 import com.splicr.app.viewModel.SubscriptionStatus
 import com.splicr.app.viewModel.SubscriptionViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -101,8 +101,8 @@ fun MediaSplicedScreen(
     source: String = "",
     currentPosition: Long = 0,
     isPlaying: Boolean = false,
-    mediaSplicedViewModel: MediaSplicedViewModel = viewModel(),
-    subscriptionViewModel: SubscriptionViewModel = viewModel()
+    subscriptionViewModel: SubscriptionViewModel = viewModel(),
+    homeViewModel: HomeViewModel = viewModel()
 ) {
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
@@ -136,7 +136,7 @@ fun MediaSplicedScreen(
                 val snackBarIsError = remember {
                     mutableStateOf(true)
                 }
-                val filePath = remember {
+                val filePath = rememberSaveable {
                     mutableStateOf("")
                 }
 
@@ -196,6 +196,9 @@ fun MediaSplicedScreen(
                     val showSavedMediumBottomSheet = rememberSaveable {
                         mutableStateOf(false)
                     }
+                    val hasPerformedBottomSheetHapticFeedback = rememberSaveable {
+                        mutableStateOf(false)
+                    }
                     val loaderDescription = rememberSaveable {
                         mutableIntStateOf(R.string.saving_your_medium_to_your_device_thank_you_for_your_patience)
                     }
@@ -236,7 +239,7 @@ fun MediaSplicedScreen(
                             label = if (Firebase.auth.currentUser != null && source != "HomeScreen") R.string.saved_to_your_device_and_your_account else R.string.saved_to_your_device,
                             showBottomSheet = showSavedMediumBottomSheet,
                             isDarkTheme = isDarkTheme,
-                            hasPerformedHapticFeedback = mediaSplicedViewModel.hasPerformedSavedMediumBottomSheetHapticFeedback,
+                            hasPerformedHapticFeedback = hasPerformedBottomSheetHapticFeedback,
                             navController = navController,
                             snackBarMessageResource = snackBarMessageResource,
                             snackBarHostState = snackBarHostState,
@@ -399,31 +402,85 @@ fun MediaSplicedScreen(
                         }
                     }
 
-                    PrimaryButton(
+                    Column(
                         modifier = Modifier.padding(
                             top = dimensionResource(id = R.dimen.spacingMd)
-                        ), textResource = if (selectedItemIndex.intValue == 1) {
-                            if (subscriptionStatus.value != SubscriptionStatus.NONE) {
-                                R.string.export
-                            } else {
-                                R.string.get_premium
-                            }
-                        } else {
-                            R.string.export
-                        }
-                    ) {
-                        val path = getOutputFilePath(
-                            context = context,
-                            filename = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.ENGLISH).format(
-                                Date()
-                            )
                         )
-                        filePath.value = "$path.mp4"
-                        if (selectedItemIndex.intValue == 1) {
-                            if (subscriptionStatus.value != SubscriptionStatus.NONE) {
+                    ) {
+                        if (selectedItemIndex.intValue == 0 && subscriptionStatus.value == SubscriptionStatus.NONE || selectedItemIndex.intValue == 1 && subscriptionStatus.value != SubscriptionStatus.NONE) {
+                            Text(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        bottom = dimensionResource(id = R.dimen.spacingMd)
+                                    ),
+                                text = if (selectedItemIndex.intValue == 0) {
+                                    if (subscriptionStatus.value == SubscriptionStatus.NONE) {
+                                        stringResource(R.string.for_high_quality_get_splicr_premium)
+                                    } else {
+                                        ""
+                                    }
+                                } else {
+                                    if (subscriptionStatus.value != SubscriptionStatus.NONE) {
+                                        stringResource(R.string._4k_media_may_use_codecs_not_supported_on_all_devices_check_compatibility_before_exporting)
+                                    } else {
+                                        ""
+                                    }
+                                },
+                                color = MaterialTheme.colorScheme.tertiary,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+                        PrimaryButton(
+                            textResource = if (selectedItemIndex.intValue == 1) {
+                                if (subscriptionStatus.value != SubscriptionStatus.NONE) {
+                                    R.string.export
+                                } else {
+                                    R.string.get_premium
+                                }
+                            } else {
+                                R.string.export
+                            }
+                        ) {
+                            val path = getOutputFilePath(
+                                context = context, filename = SimpleDateFormat(
+                                    "yyyyMMdd_HHmmss", Locale.ENGLISH
+                                ).format(
+                                    Date()
+                                )
+                            )
+                            filePath.value = "$path.mp4"
+                            if (selectedItemIndex.intValue == 1) {
+                                if (subscriptionStatus.value != SubscriptionStatus.NONE) {
+                                    export(
+                                        context = context,
+                                        resolution = "4k",
+                                        inputUri = Uri.parse(canvasItemData.url.ifEmpty { videoUriString }),
+                                        outputFilePath = filePath.value,
+                                        thumbnailPath = "$path.jpg",
+                                        showSavedMediumBottomSheet = showSavedMediumBottomSheet,
+                                        showExportingMediumBottomSheet = showExportingMediumBottomSheet,
+                                        scope = scope,
+                                        snackBarMessage = snackBarMessage,
+                                        snackBarIsError = snackBarIsError,
+                                        snackBarHostState = snackBarHostState,
+                                        snackBarMessageResource = snackBarMessageResource,
+                                        source = source,
+                                        loaderDescription = loaderDescription,
+                                        canvasItemData = canvasItemData,
+                                        thumbnailBitmap = thumbnailBitmap.value,
+                                        homeViewModel = homeViewModel
+                                    )
+                                } else {
+                                    navController.navigate("ManageSubscriptionScreen")
+                                }
+                            } else {
                                 export(
                                     context = context,
-                                    resolution = "4k",
+                                    resolution = "720p",
                                     inputUri = Uri.parse(canvasItemData.url.ifEmpty { videoUriString }),
                                     outputFilePath = filePath.value,
                                     thumbnailPath = "$path.jpg",
@@ -437,30 +494,10 @@ fun MediaSplicedScreen(
                                     source = source,
                                     loaderDescription = loaderDescription,
                                     canvasItemData = canvasItemData,
-                                    thumbnailBitmap = thumbnailBitmap.value
+                                    thumbnailBitmap = thumbnailBitmap.value,
+                                    homeViewModel = homeViewModel
                                 )
-                            } else {
-                                navController.navigate("ManageSubscriptionScreen")
                             }
-                        } else {
-                            export(
-                                context = context,
-                                resolution = "720p",
-                                inputUri = Uri.parse(canvasItemData.url.ifEmpty { videoUriString }),
-                                outputFilePath = filePath.value,
-                                thumbnailPath = "$path.jpg",
-                                showSavedMediumBottomSheet = showSavedMediumBottomSheet,
-                                showExportingMediumBottomSheet = showExportingMediumBottomSheet,
-                                scope = scope,
-                                snackBarMessage = snackBarMessage,
-                                snackBarIsError = snackBarIsError,
-                                snackBarHostState = snackBarHostState,
-                                snackBarMessageResource = snackBarMessageResource,
-                                source = source,
-                                loaderDescription = loaderDescription,
-                                canvasItemData = canvasItemData,
-                                thumbnailBitmap = thumbnailBitmap.value
-                            )
                         }
                     }
                 }
@@ -493,6 +530,7 @@ fun export(
     source: String,
     loaderDescription: MutableIntState,
     canvasItemData: CanvasItemData,
+    homeViewModel: HomeViewModel,
     thumbnailBitmap: Bitmap?
 ) {
     loaderDescription.intValue =
@@ -510,6 +548,7 @@ fun export(
         onCompletion = { success, errorMessageResource ->
             showExportingMediumBottomSheet.value = false
             if (success) {
+                homeViewModel.addItem(item = canvasItemData)
                 showSavedMediumBottomSheet.value = true
             } else {
                 if (errorMessageResource != null) {

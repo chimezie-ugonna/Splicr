@@ -17,5 +17,5 @@ data class PromptItemData(
     val isProcessing: MutableState<Boolean>? = null,
     val viewModel: PromptViewModel? = null,
     val canvasChoiceList: List<AspectRatioChoiceItemData>? = null,
-    val onClick: (Int) -> Unit = {}
+    val onClick: ((Int) -> Unit)? = null
 )

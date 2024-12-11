@@ -183,6 +183,15 @@ fun PromptScreen(
                         }
                     }
 
+                    val previousListSize =
+                        remember { mutableIntStateOf(promptViewModel.listItems.size) }
+                    LaunchedEffect(promptViewModel.listItems.size) {
+                        if (promptViewModel.listItems.isNotEmpty() && promptViewModel.listItems.size != previousListSize.intValue) {
+                            listState.animateScrollToItem(promptViewModel.listItems.size - 1)
+                            previousListSize.intValue = promptViewModel.listItems.size
+                        }
+                    }
+
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -230,12 +239,17 @@ fun PromptScreen(
                                     navController = navController,
                                     trimRanges = item.trimRanges,
                                     isProcessing = item.isProcessing,
-                                    listState = listState,
                                     viewModel = item.viewModel,
                                     thumbnailBitmap = item.thumbnailBitmap,
                                     aspectRatioChoiceList = item.canvasChoiceList,
                                     duration = item.duration,
-                                    onClick = item.onClick
+                                    onClick = item.onClick,
+                                    scope = scope,
+                                    subscriptionStatus = subscriptionStatus,
+                                    snackBarMessage = snackBarMessage,
+                                    snackBarIsError = snackBarIsError,
+                                    snackBarHostState = snackBarHostState,
+                                    snackBarMessageResource = snackBarMessageResource
                                 )
                             }
                         }
@@ -491,11 +505,6 @@ fun PromptScreen(
                                                     message = AnnotatedString(text = promptValue)
                                                 )
                                             )
-                                            scope.launch {
-                                                listState.animateScrollToItem(
-                                                    promptViewModel.listItems.size - 1
-                                                )
-                                            }
                                             promptViewModel.promptValue.value = TextFieldValue("")
                                             converse(
                                                 context = context,
@@ -506,8 +515,7 @@ fun PromptScreen(
                                                 uploadFormatStringResource = uploadFormatStringResource,
                                                 navController = navController,
                                                 primaryColor = primaryColor,
-                                                promptViewModel = promptViewModel,
-                                                listState = listState
+                                                promptViewModel = promptViewModel
                                             )
                                         }
                                     }

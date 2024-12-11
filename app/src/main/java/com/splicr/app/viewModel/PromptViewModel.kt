@@ -29,7 +29,11 @@ class PromptViewModel : ViewModel() {
         }
     }
 
-    private fun updateListItems(uploadFormatStringResource: Int, videoUri: String, context: Context) {
+    private fun updateListItems(
+        uploadFormatStringResource: Int,
+        videoUri: String,
+        context: Context
+    ) {
         if (mutableVideoUriString != videoUri) {
             mutableVideoUriString = videoUri
 
