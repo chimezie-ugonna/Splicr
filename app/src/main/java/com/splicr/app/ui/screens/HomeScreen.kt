@@ -304,7 +304,6 @@ fun HomeScreen(
                                             }
                                         }
                                     }
-                                    homeViewModel.listenForRealTimeUpdates()
                                 }
 
                                 homeViewModel.isEmpty -> {
@@ -315,7 +314,6 @@ fun HomeScreen(
                                         navController = navController,
                                         isUserLoggedIn = isUserLoggedIn
                                     )
-                                    homeViewModel.listenForRealTimeUpdates()
                                 }
                             }
                         }

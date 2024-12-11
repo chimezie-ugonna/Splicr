@@ -360,9 +360,9 @@ fun CustomBottomSheet(
                     label == R.string.contact_support -> {
                         val listItems = listOf(
                             ListItemData(
-                                leadingIconResource = R.drawable.mail,
-                                titleResource = R.string.email,
-                                subText = stringResource(R.string.splicrapp_gmail_com)
+                                leadingIconResource = R.drawable.whatsapp_2,
+                                titleResource = R.string.whatsapp,
+                                subText = stringResource(R.string.support_number)
                             ), ListItemData(
                                 leadingIconResource = R.drawable.x,
                                 titleResource = R.string.x,
@@ -372,6 +372,12 @@ fun CustomBottomSheet(
                             ), ListItemData(
                                 leadingIconResource = R.drawable.instagram,
                                 titleResource = R.string.instagram,
+                                subText = stringResource(
+                                    R.string.splicrapp_gmail_com
+                                )
+                            ), ListItemData(
+                                leadingIconResource = R.drawable.facebook_2,
+                                titleResource = R.string.facebook,
                                 subText = stringResource(
                                     R.string.splicrapp_gmail_com
                                 )
@@ -402,26 +408,25 @@ fun CustomBottomSheet(
                                                     }
                                                 }
                                                 when (item.titleResource) {
-                                                    R.string.email -> {
-                                                        val emailIntent =
-                                                            Intent(Intent.ACTION_SENDTO).apply {
-                                                                data = Uri.parse("mailto:")
-                                                                putExtra(
-                                                                    Intent.EXTRA_EMAIL,
-                                                                    arrayOf(item.subText)
+                                                    R.string.whatsapp -> {
+                                                        try {
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    Intent.ACTION_VIEW,
+                                                                    Uri.parse(
+                                                                        "whatsapp://send?phone=${item.subText}"
+                                                                    )
                                                                 )
-                                                            }
-                                                        if (emailIntent.resolveActivity(context.packageManager) != null) {
-                                                            context.startActivity(emailIntent)
-                                                        } else {
-                                                            snackBarIsError.value = true
-                                                            snackBarMessageResource.value =
-                                                                R.string.we_could_not_find_any_application_to_handle_that_operation
-                                                            scope.launch {
-                                                                snackBarHostState.showSnackbar(
-                                                                    ""
+                                                            )
+                                                        } catch (_: ActivityNotFoundException) {
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    Intent.ACTION_VIEW,
+                                                                    Uri.parse(
+                                                                        "https://wa.me/${item.subText}"
+                                                                    )
                                                                 )
-                                                            }
+                                                            )
                                                         }
                                                     }
 
@@ -429,17 +434,19 @@ fun CustomBottomSheet(
                                                         try {
                                                             context.startActivity(
                                                                 Intent(
-                                                                    Intent.ACTION_VIEW, Uri.parse(
+                                                                    Intent.ACTION_VIEW,
+                                                                    Uri.parse(
                                                                         "twitter://user?screen_name=${
                                                                             item.subText
                                                                         }"
                                                                     )
                                                                 )
                                                             )
-                                                        } catch (e: ActivityNotFoundException) {
+                                                        } catch (_: ActivityNotFoundException) {
                                                             context.startActivity(
                                                                 Intent(
-                                                                    Intent.ACTION_VIEW, Uri.parse(
+                                                                    Intent.ACTION_VIEW,
+                                                                    Uri.parse(
                                                                         "https://twitter.com/${
                                                                             item.subText
                                                                         }"
@@ -453,20 +460,44 @@ fun CustomBottomSheet(
                                                         try {
                                                             context.startActivity(
                                                                 Intent(
-                                                                    Intent.ACTION_VIEW, Uri.parse(
+                                                                    Intent.ACTION_VIEW,
+                                                                    Uri.parse(
                                                                         "instagram://user?username=${
                                                                             item.subText
                                                                         }"
                                                                     )
                                                                 )
                                                             )
-                                                        } catch (e: ActivityNotFoundException) {
+                                                        } catch (_: ActivityNotFoundException) {
                                                             context.startActivity(
                                                                 Intent(
-                                                                    Intent.ACTION_VIEW, Uri.parse(
+                                                                    Intent.ACTION_VIEW,
+                                                                    Uri.parse(
                                                                         "https://instagram.com/${
                                                                             item.subText
                                                                         }"
+                                                                    )
+                                                                )
+                                                            )
+                                                        }
+                                                    }
+
+                                                    R.string.facebook -> {
+                                                        try {
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    Intent.ACTION_VIEW,
+                                                                    Uri.parse(
+                                                                        "fb://profile/${item.subText}"
+                                                                    )
+                                                                )
+                                                            )
+                                                        } catch (_: ActivityNotFoundException) {
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    Intent.ACTION_VIEW,
+                                                                    Uri.parse(
+                                                                        "https://facebook.com/${item.subText}"
                                                                     )
                                                                 )
                                                             )
@@ -532,7 +563,7 @@ fun CustomBottomSheet(
                                 shape = MaterialTheme.shapes.extraLarge
                             )
                             .onGloballyPositioned { coordinates ->
-                                boxWidth = coordinates.size.width // Capture the width
+                                boxWidth = coordinates.size.width
                             }) {
                             Box(
                                 modifier = Modifier
@@ -660,7 +691,7 @@ fun CustomBottomSheet(
                                     R.drawable.facebook, "com.facebook.katana", "com.facebook.lite"
                                 ),
                                 listOf(R.drawable.snapchat, "com.snapchat.android", null),
-                                listOf(R.drawable.whatsapp, "com.whatsapp", null),
+                                listOf(R.drawable.whatsapp, "com.whatsapp", "com.whatsapp.w4b"),
                                 listOf(
                                     R.drawable.instagram_2,
                                     "com.instagram.android",

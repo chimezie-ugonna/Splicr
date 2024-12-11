@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val subscriptionViewModel: SubscriptionViewModel by viewModels {
-                SubscriptionViewModelFactory(application) // Pass the application instance if needed
+                SubscriptionViewModelFactory(application)
             }
             val isSystemInDarkTheme = true
             Navigation(isDarkTheme = remember {

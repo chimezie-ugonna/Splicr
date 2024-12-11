@@ -94,7 +94,7 @@ fun Navigation(
                 type = NavType.BoolType
             })
         ) {
-            val purchasesRestored = it.arguments?.getBoolean("purchasesRestored") ?: false
+            val purchasesRestored = it.arguments?.getBoolean("purchasesRestored") == true
             BackHandler(enabled = true) {
                 (context as Activity).moveTaskToBack(true)
             }
@@ -110,7 +110,6 @@ fun Navigation(
                 isDarkTheme = isDarkTheme,
                 navController = navController,
                 settingsViewModel = viewModel(),
-                homeViewModel = homeViewModel,
                 subscriptionViewModel = subscriptionViewModel
             )
         }
@@ -176,7 +175,7 @@ fun Navigation(
                 it.arguments?.getString("canvasItemDataJson"), CanvasItemData::class.java
             )
             val videoUriString = it.arguments?.getString("videoUriString") ?: ""
-            val showDone = it.arguments?.getBoolean("showDone") ?: true
+            val showDone = it.arguments?.getBoolean("showDone") != false
             MediaPlayerScreen(
                 isDarkTheme = isDarkTheme,
                 navController = navController,
@@ -195,7 +194,7 @@ fun Navigation(
             ScreenOrientationUtil.SetScreenOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
             val videoUriString = it.arguments?.getString("videoUriString") ?: ""
             val currentPosition = it.arguments?.getLong("currentPosition") ?: 0
-            val isPlaying = it.arguments?.getBoolean("isPlaying") ?: false
+            val isPlaying = it.arguments?.getBoolean("isPlaying") == true
             val duration = it.arguments?.getLong("duration") ?: 0
 
             BackHandler(enabled = true) {
@@ -228,7 +227,7 @@ fun Navigation(
             )
             val videoUriString = it.arguments?.getString("videoUriString") ?: ""
             val currentPosition = it.arguments?.getLong("currentPosition") ?: 0
-            val isPlaying = it.arguments?.getBoolean("isPlaying") ?: false
+            val isPlaying = it.arguments?.getBoolean("isPlaying") == true
 
             BackHandler(enabled = true) {
                 navController.previousBackStackEntry?.savedStateHandle?.set(
@@ -268,7 +267,7 @@ fun Navigation(
             val videoUriString = it.arguments?.getString("videoUriString") ?: ""
             val source = it.arguments?.getString("source") ?: ""
             val currentPosition = it.arguments?.getLong("currentPosition") ?: 0
-            val isPlaying = it.arguments?.getBoolean("isPlaying") ?: false
+            val isPlaying = it.arguments?.getBoolean("isPlaying") == true
 
             BackHandler(enabled = true) {
                 navController.previousBackStackEntry?.savedStateHandle?.set(
@@ -288,8 +287,8 @@ fun Navigation(
                 source = source,
                 currentPosition = currentPosition,
                 isPlaying = isPlaying,
-                mediaSplicedViewModel = viewModel(),
-                subscriptionViewModel = subscriptionViewModel
+                subscriptionViewModel = subscriptionViewModel,
+                homeViewModel = homeViewModel
             )
         }
         composable(

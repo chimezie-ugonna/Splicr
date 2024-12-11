@@ -13,18 +13,14 @@
 
     <queries>
         <package android:name="com.zhiliaoapp.musically" />
+        <package android:name="com.zhiliaoapp.musically.go" />
         <package android:name="com.facebook.katana" />
+        <package android:name="com.facebook.lite" />
         <package android:name="com.instagram.android" />
+        <package android:name="com.instagram.lite" />
         <package android:name="com.snapchat.android" />
         <package android:name="com.whatsapp" />
-    </queries>
-
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-
-            <data android:scheme="mailto" />
-        </intent>
+        <package android:name="com.whatsapp.w4b" />
     </queries>
 
     <application

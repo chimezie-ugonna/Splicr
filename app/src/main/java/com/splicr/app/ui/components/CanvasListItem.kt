@@ -1,6 +1,7 @@
 package com.splicr.app.ui.components
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.scaleIn
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
@@ -25,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
@@ -71,21 +75,35 @@ fun CanvasListItem(
     navController: NavController
 ) {
     val expanded = remember { mutableStateOf(false) }
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight()
-            .padding(
-                top = if (index == 0) dimensionResource(id = R.dimen.spacingXs) else 0.dp,
-                bottom = bottomPadding
+    Box(modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .padding(
+            top = if (index == 0) dimensionResource(id = R.dimen.spacingXs) else 0.dp,
+            bottom = bottomPadding
+        )
+        .clip(MaterialTheme.shapes.medium)
+        .clickable {
+            navController.navigate(
+                "MediaPlayerScreen/${
+                    Uri.encode(
+                        Gson().toJson(
+                            CanvasItemData(
+                            )
+                        )
+                    )
+                }/${
+                    Uri.encode(
+                        item.url
+                    )
+                }/${false}"
             )
-            .clip(MaterialTheme.shapes.medium)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.surface,
-                shape = MaterialTheme.shapes.medium
-            )
-    ) {
+        }
+        .border(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.surface,
+            shape = MaterialTheme.shapes.medium
+        )) {
         AsyncImage(
             modifier = Modifier
                 .fillMaxWidth()
@@ -193,6 +211,9 @@ fun CanvasListItem(
                                         titleStringResource = R.string.export,
                                         iconResource = R.drawable.export
                                     ), CanvasOptionsItemData(
+                                        titleStringResource = R.string.share,
+                                        iconResource = R.drawable.share
+                                    ), CanvasOptionsItemData(
                                         titleStringResource = R.string.delete,
                                         iconResource = R.drawable.delete
                                     )
@@ -207,35 +228,53 @@ fun CanvasListItem(
                                                 ), topEnd = dimensionResource(
                                                     id = R.dimen.spacingXxxs
                                                 )
-                                            ) else RoundedCornerShape(
+                                            ) else if (index == optionsItems.size - 1) RoundedCornerShape(
                                                 bottomStart = dimensionResource(
                                                     id = R.dimen.spacingXxxs
                                                 ), bottomEnd = dimensionResource(
                                                     id = R.dimen.spacingXxxs
                                                 )
-                                            )
+                                            ) else RectangleShape
                                         )
                                         .clickable {
-                                            if (item2.titleStringResource == R.string.delete) {
-                                                homeViewModel.deleteItem(
-                                                    item = item, context = context
-                                                )
-                                            } else {
-                                                navController.navigate(
-                                                    route = "MediaSplicedScreen/${
-                                                        Uri.encode(
-                                                            Gson().toJson(
-                                                                item
+                                            when (item2.titleStringResource) {
+                                                R.string.export -> {
+                                                    navController.navigate(
+                                                        route = "MediaSplicedScreen/${
+                                                            Uri.encode(
+                                                                Gson().toJson(
+                                                                    item
+                                                                )
                                                             )
+                                                        }/${
+                                                            context.getString(R.string.empty)
+                                                        }/HomeScreen/${
+                                                            0
+                                                        }/${
+                                                            false
+                                                        }"
+                                                    )
+                                                }
+
+                                                R.string.share -> {
+                                                    context.startActivity(
+                                                        Intent.createChooser(
+                                                            Intent(Intent.ACTION_SEND).apply {
+                                                                type = "text/plain"
+                                                                putExtra(
+                                                                    Intent.EXTRA_TEXT, item.url
+                                                                )
+                                                            },
+                                                            context.getString(R.string.share_video_via)
                                                         )
-                                                    }/${
-                                                        context.getString(R.string.empty)
-                                                    }/HomeScreen/${
-                                                        0
-                                                    }/${
-                                                        false
-                                                    }"
-                                                )
+                                                    )
+                                                }
+
+                                                R.string.delete -> {
+                                                    homeViewModel.deleteItem(
+                                                        item = item, context = context
+                                                    )
+                                                }
                                             }
                                             expanded.value = false
                                         }
@@ -282,15 +321,17 @@ fun CanvasListItem(
                                                 overflow = TextOverflow.Ellipsis
                                             )
 
-                                            Image(
+                                            Icon(
+                                                modifier = Modifier.size(size = dimensionResource(id = R.dimen.spacingMd)),
                                                 painter = painterResource(
                                                     item2.iconResource
-                                                ), contentDescription = null
+                                                ),
+                                                contentDescription = null
                                             )
 
                                         }
 
-                                        if (index == 0) {
+                                        if (index != optionsItems.size - 1) {
                                             HorizontalDivider(
                                                 thickness = 0.5.dp,
                                                 color = MaterialTheme.colorScheme.secondary
