@@ -15,9 +15,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -248,11 +251,7 @@ fun CanvasListItem(
                                                             )
                                                         }/${
                                                             context.getString(R.string.empty)
-                                                        }/HomeScreen/${
-                                                            0
-                                                        }/${
-                                                            false
-                                                        }"
+                                                        }/HomeScreen"
                                                     )
                                                 }
 
@@ -362,7 +361,7 @@ fun CanvasListLoadingItem(
             .padding(
                 top = topPadding, bottom = if (index == count - 1) dimensionResource(
                     id = R.dimen.spacingMd
-                ) else 0.dp
+                ) + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 0.dp
             )
     ) {
         Box(

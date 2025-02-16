@@ -16,13 +16,14 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.HorizontalPager
@@ -59,6 +60,7 @@ import com.splicr.app.ui.components.AppNameText
 import com.splicr.app.ui.components.CustomTopNavigationBar
 import com.splicr.app.ui.components.PrimaryButton
 import com.splicr.app.ui.components.SecondaryButton
+import com.splicr.app.ui.components.nonScaledSp
 import com.splicr.app.ui.theme.SplicrTheme
 import com.splicr.app.utils.SharedPreferenceUtil
 import kotlinx.coroutines.launch
@@ -71,10 +73,7 @@ fun OnboardingScreen(
 ) {
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
-            color = MaterialTheme.colorScheme.background
+            modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
         ) {
             val scope = rememberCoroutineScope()
             val density = LocalDensity.current
@@ -114,7 +113,9 @@ fun OnboardingScreen(
                 val sideSpacing = dimensionResource(
                     id = R.dimen.spacingXl
                 )
-                val topSpacing = 72.dp
+                val topSpacing =
+                    dimensionResource(id = R.dimen.spacingXl) + WindowInsets.statusBars.asPaddingValues()
+                        .calculateTopPadding()
 
                 Pager(
                     items = items,
@@ -162,6 +163,7 @@ fun OnboardingScreen(
                                 text = stringResource(R.string.skip),
                                 color = MaterialTheme.colorScheme.onBackground,
                                 style = MaterialTheme.typography.labelSmall,
+                                fontSize = MaterialTheme.typography.labelSmall.fontSize.nonScaledSp,
                                 fontWeight = FontWeight.Normal
                             )
                         }
@@ -171,6 +173,7 @@ fun OnboardingScreen(
                                 text = stringResource(R.string.skip),
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0f),
                                 style = MaterialTheme.typography.labelSmall,
+                                fontSize = MaterialTheme.typography.labelSmall.fontSize.nonScaledSp,
                                 fontWeight = FontWeight.Normal
                             )
                         }
@@ -186,6 +189,7 @@ fun OnboardingScreen(
                             end = dimensionResource(id = R.dimen.spacingXl),
                             bottom = 59.41.dp
                         )
+                        .navigationBarsPadding()
                         .onGloballyPositioned { coordinates ->
                             pagerTextBottomPadding.value =
                                 with(density) { coordinates.size.height.toDp() + 54.dp }
@@ -269,7 +273,8 @@ fun Pager(
                             start = dimensionResource(id = R.dimen.spacingXl),
                             end = dimensionResource(id = R.dimen.spacingXl),
                             bottom = bottomPadding + bottomSpacing
-                        ),
+                        )
+                        .navigationBarsPadding(),
                     color = MaterialTheme.colorScheme.onBackground,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold

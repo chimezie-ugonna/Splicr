@@ -32,4 +32,13 @@ object SharedPreferenceUtil {
     fun atHomeScreen(): Boolean {
         return sp.getBoolean("atHomeScreen", false)
     }
+
+    fun guestUserId(data: String) {
+        spe.putString("guestUserId", data)
+        spe.commit()
+    }
+
+    fun guestUserId(): String? {
+        return sp.getString("guestUserId", null)
+    }
 }

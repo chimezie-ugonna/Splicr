@@ -11,7 +11,7 @@ data class CanvasItemData(
     var url: String = "",
     var thumbnailUrl: String = "",
     var duration: Long = 0,
-    var size: Long = 0,
+    var size: Long? = null,
     var aspectRatioTypeKey: String = "",
     var aspectRatioWidth: Int = 0,
     var aspectRatioHeight: Int = 0,

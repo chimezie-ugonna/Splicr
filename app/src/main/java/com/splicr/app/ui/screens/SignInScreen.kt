@@ -8,13 +8,12 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -78,10 +77,7 @@ fun SignInScreen(
 ) {
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
-            color = MaterialTheme.colorScheme.background
+            modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
         ) {
             Box(
                 modifier = Modifier
@@ -112,8 +108,9 @@ fun SignInScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .statusBarsPadding()
                         .padding(
-                            top = 72.dp
+                            top = dimensionResource(id = R.dimen.spacingXl)
                         )
                 ) {
                     CustomTopNavigationBar(
@@ -376,7 +373,8 @@ fun SignInScreen(
                                 .padding(
                                     top = dimensionResource(id = R.dimen.spacingMd),
                                     bottom = dimensionResource(id = R.dimen.spacingXl)
-                                ),
+                                )
+                                .navigationBarsPadding(),
                             textResource = R.string.sign_in_with_google,
                             leadingImageResource = R.drawable.google_icon
                         ) {
@@ -416,7 +414,7 @@ fun SignInScreen(
                                 .fillMaxWidth()
                                 .padding(
                                     top = dimensionResource(id = R.dimen.spacingMd),
-                                    bottom = dimensionResource(id = R.dimen.spacingXl)
+                                    bottom = dimensionResource(id = R.dimen.spacingXl) + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                                 ),
                             textResource = R.string.sign_in_with_apple,
                             leadingImageResource = R.drawable.apple_icon

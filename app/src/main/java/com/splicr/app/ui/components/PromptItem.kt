@@ -2,7 +2,6 @@ package com.splicr.app.ui.components
 
 import android.content.ClipboardManager
 import android.content.Context
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -26,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -67,8 +68,8 @@ import com.splicr.app.data.PromptItemData
 import com.splicr.app.data.TrimRangeData
 import com.splicr.app.utils.MediaConfigurationUtil.convertDimensionsToAspectRatio
 import com.splicr.app.utils.MediaConfigurationUtil.getAllVideoMetadata
-import com.splicr.app.utils.MediaConfigurationUtil.processVideo
-import com.splicr.app.utils.SplicrBrainUtil.startWaitingMessageGeneration
+import com.splicr.app.utils.MediaConfigurationUtil.uploadVideoAndWaitForPreview
+import com.splicr.app.utils.SplicrBrainUtil.generateWaitingMessage
 import com.splicr.app.viewModel.PromptViewModel
 import com.splicr.app.viewModel.SubscriptionStatus
 import kotlinx.coroutines.CoroutineScope
@@ -79,16 +80,9 @@ import java.util.Locale
 @Composable
 fun PromptItem(
     modifier: Modifier,
-    isAuthor: Boolean,
-    videoUriString: String? = null,
-    thumbnailBitmap: Bitmap? = null,
-    duration: String? = null,
-    message: AnnotatedString,
-    showCanvasOptions: Boolean,
-    isLoading: Boolean = false,
-    trimRanges: List<TrimRangeData>? = null,
-    isProcessing: MutableState<Boolean>? = null,
-    viewModel: PromptViewModel? = null,
+    item: PromptItemData,
+    isProcessing: MutableState<Boolean>,
+    viewModel: PromptViewModel,
     navController: NavHostController,
     subscriptionStatus: State<SubscriptionStatus?>,
     snackBarMessageResource: MutableIntState,
@@ -96,23 +90,24 @@ fun PromptItem(
     scope: CoroutineScope = rememberCoroutineScope(),
     snackBarHostState: SnackbarHostState,
     snackBarIsError: MutableState<Boolean>,
-    aspectRatioChoiceList: List<AspectRatioChoiceItemData>? = null,
-    onClick: ((Int) -> Unit)?
+    isTyping: MutableState<Boolean>,
+    listState: LazyListState
 ) {
     val context = LocalContext.current
+    val hapticFeedback = LocalHapticFeedback.current
     val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     Row(
         modifier = modifier
             .fillMaxWidth()
             .wrapContentHeight(),
-        horizontalArrangement = if (isAuthor) Arrangement.End else Arrangement.Start
+        horizontalArrangement = if (item.isAuthor) Arrangement.End else Arrangement.Start
     ) {
         Row(
             modifier = Modifier.wrapContentSize(),
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(space = dimensionResource(id = R.dimen.spacingXs))
         ) {
-            if (!isAuthor) {
+            if (!item.isAuthor) {
                 Image(
                     modifier = Modifier
                         .size(size = dimensionResource(id = R.dimen.spacingXl))
@@ -131,12 +126,17 @@ fun PromptItem(
             Box(modifier = Modifier
                 .wrapContentSize()
                 .clip(shape = MaterialTheme.shapes.small)
-                .background(color = if (isAuthor) Color(color = 0XFF2C2C2C) else Color(color = 0XFF242620))
-                .then(if (isAuthor && message.isNotEmpty()) {
+                .background(
+                    color = if (item.isAuthor) Color(color = 0XFF2C2C2C) else Color(
+                        color = 0XFF242620
+                    )
+                )
+                .then(if (item.isAuthor && item.message.isNotEmpty()) {
                     Modifier.pointerInput(Unit) {
                         detectTapGestures(onLongPress = {
                             val clip = android.content.ClipData.newPlainText(
-                                context.getString(R.string.copied_to_clipboard), message
+                                context.getString(R.string.copied_to_clipboard),
+                                item.message
                             )
                             clipboardManager.setPrimaryClip(clip)
                             snackBarIsError.value = false
@@ -153,13 +153,13 @@ fun PromptItem(
                     Modifier
                 })
                 .padding(
-                    all = if (showCanvasOptions || thumbnailBitmap == null) dimensionResource(
+                    all = if (item.showCanvasOptions || item.thumbnailBitmap == null) dimensionResource(
                         id = R.dimen.spacingSm
                     ) else 0.dp
                 ), contentAlignment = Alignment.Center) {
 
                 when {
-                    showCanvasOptions && aspectRatioChoiceList != null -> {
+                    item.showCanvasOptions && item.canvasChoiceList != null -> {
                         Column {
                             Text(
                                 modifier = Modifier.wrapContentSize(),
@@ -169,11 +169,11 @@ fun PromptItem(
                                 fontWeight = FontWeight.Normal,
                                 textAlign = TextAlign.Start
                             )
-                            val isTappable = isProcessing != null && !isProcessing.value
-                            repeat(aspectRatioChoiceList.size) { index ->
-                                val aspectRatioWidth = aspectRatioChoiceList[index].aspectRatioWidth
+                            val isTappable = !isProcessing.value && !isTyping.value
+                            repeat(item.canvasChoiceList.size) { index ->
+                                val aspectRatioWidth = item.canvasChoiceList[index].aspectRatioWidth
                                 val aspectRatioHeight =
-                                    aspectRatioChoiceList[index].aspectRatioHeight
+                                    item.canvasChoiceList[index].aspectRatioHeight
                                 val primaryColor = MaterialTheme.colorScheme.primary
                                 Row(modifier = Modifier
                                     .fillMaxWidth()
@@ -187,9 +187,9 @@ fun PromptItem(
                                         shape = MaterialTheme.shapes.medium
                                     )
                                     .clickable(enabled = isTappable) {
-                                        if (trimRanges != null && videoUriString != null && isProcessing != null && !isProcessing.value && viewModel != null) {
+                                        if (item.trimRanges != null && item.videoUriString != null && !isProcessing.value) {
                                             if (subscriptionStatus.value == SubscriptionStatus.NONE && calculateTotalDurationInSeconds(
-                                                    ranges = trimRanges
+                                                    ranges = item.trimRanges
                                                 ) > 30000
                                             ) {
                                                 val tagAndAnnotation = "get_premium"
@@ -208,129 +208,68 @@ fun PromptItem(
                                                 viewModel.addListItem(PromptItemData(
                                                     message = annotatedString
                                                 ) {
-                                                    annotatedString
-                                                        .getStringAnnotations(
-                                                            tag = tagAndAnnotation,
-                                                            start = it,
-                                                            end = it
-                                                        )
-                                                        .firstOrNull()
-                                                        ?.let {
-                                                            navController.navigate("ManageSubscriptionScreen")
-                                                        }
+                                                    annotatedString.getStringAnnotations(
+                                                        tag = tagAndAnnotation,
+                                                        start = it,
+                                                        end = it
+                                                    ).firstOrNull()?.let {
+                                                        navController.navigate("ManageSubscriptionScreen")
+                                                    }
                                                 })
                                             } else {
+                                                isProcessing.value = true
                                                 viewModel.addListItem(
                                                     PromptItemData(
-                                                        message = AnnotatedString(
-                                                            text = context.getString(
-                                                                R.string.got_it_i_m_on_it_and_will_have_it_sorted_out_for_you_soon_thanks_for_your_patience
-                                                            )
-                                                        )
+                                                        isLoading = true
                                                     )
                                                 )
-                                                isProcessing.value = true
-                                                val item = PromptItemData(
-                                                    isLoading = true
-                                                )
-                                                viewModel.addListItem(item)
 
-                                                startWaitingMessageGeneration(
+                                                generateWaitingMessage(
                                                     context = context,
                                                     promptViewModel = viewModel,
                                                     scope = scope
                                                 )
 
-                                                processVideo(
-                                                    uri = Uri.parse(videoUriString),
-                                                    trimRanges = trimRanges,
+                                                uploadVideoAndWaitForPreview(
                                                     context = context,
-                                                    aspectRatioWidth = aspectRatioWidth,
-                                                    aspectRatioHeight = aspectRatioHeight,
-                                                    scope = scope
-                                                ) { uri ->
-                                                    viewModel.removeListItem(item)
-                                                    if (uri != null) {
-                                                        if (uri != Uri.EMPTY) {
-                                                            val size = getAllVideoMetadata(
-                                                                context = context,
-                                                                videoUri = uri
-                                                            )?.fileSize
-                                                            val duration2 = getAllVideoMetadata(
-                                                                context = context,
-                                                                videoUri = uri
-                                                            )?.duration ?: 0
-                                                            if (size != null) {
-                                                                viewModel.addListItem(
-                                                                    PromptItemData(
-                                                                        message = AnnotatedString(
-                                                                            text = context.getString(
-                                                                                R.string.done
-                                                                            )
+                                                    uri = Uri.parse(item.videoUriString),
+                                                    trimRanges = item.trimRanges,
+                                                    aspectRatio = convertDimensionsToAspectRatio(
+                                                        context = context,
+                                                        width = aspectRatioWidth,
+                                                        height = aspectRatioHeight
+                                                    )
+                                                ) { videoUrl, thumbnailUrl ->
+                                                    viewModel.removeListItem(viewModel.listItems[viewModel.listItems.size - 1])
+                                                    if (viewModel.waitingMessageJob?.isActive == true) {
+                                                        viewModel.waitingMessageJob?.cancel()
+                                                        viewModel.previousWaitingMessageResponse =
+                                                            ""
+                                                    }
+                                                    if (!videoUrl.isNullOrEmpty() && Uri.parse(
+                                                            videoUrl
+                                                        ) != Uri.EMPTY && !thumbnailUrl.isNullOrEmpty()
+                                                    ) {
+                                                        navController.navigate(
+                                                            "MediaPlayerScreen/${
+                                                                Uri.encode(
+                                                                    Gson().toJson(
+                                                                        CanvasItemData(
+                                                                            aspectRatioTypeKey = context.getString(
+                                                                                item.canvasChoiceList[index].typeStringResource
+                                                                            ),
+                                                                            aspectRatioWidth = aspectRatioWidth,
+                                                                            aspectRatioHeight = aspectRatioHeight,
+                                                                            thumbnailUrl = thumbnailUrl
                                                                         )
                                                                     )
                                                                 )
-                                                                viewModel.addListItem(
-                                                                    PromptItemData(
-                                                                        message = AnnotatedString(
-                                                                            text = context.getString(
-                                                                                R.string.how_else_would_you_like_to_trim
-                                                                            )
-                                                                        )
-                                                                    )
+                                                            }/${
+                                                                Uri.encode(
+                                                                    videoUrl
                                                                 )
-                                                                navController.navigate(
-                                                                    "MediaPlayerScreen/${
-                                                                        Uri.encode(
-                                                                            Gson().toJson(
-                                                                                CanvasItemData(
-                                                                                    aspectRatioTypeKey = context.getString(
-                                                                                        aspectRatioChoiceList[index].typeStringResource
-                                                                                    ),
-                                                                                    aspectRatioWidth = aspectRatioWidth,
-                                                                                    aspectRatioHeight = aspectRatioHeight,
-                                                                                    size = size,
-                                                                                    duration = duration2
-                                                                                )
-                                                                            )
-                                                                        )
-                                                                    }/${
-                                                                        Uri.encode(
-                                                                            uri.toString()
-                                                                        )
-                                                                    }/${true}"
-                                                                )
-                                                            } else {
-                                                                viewModel.addListItem(
-                                                                    PromptItemData(
-                                                                        message = AnnotatedString(
-                                                                            text = context.getString(
-                                                                                R.string.oops_i_ran_into_an_issue_while_processing_your_request_let_s_try_that_again_how_would_you_like_me_to_trim
-                                                                            )
-                                                                        )
-                                                                    )
-                                                                )
-                                                            }
-                                                        } else {
-                                                            viewModel.addListItem(
-                                                                PromptItemData(
-                                                                    message = AnnotatedString(
-                                                                        text = context.getString(
-                                                                            R.string.the_operation_was_interrupted_if_this_wasn_t_intentional_you_can_try_again
-                                                                        )
-                                                                    )
-                                                                )
-                                                            )
-                                                            viewModel.addListItem(
-                                                                PromptItemData(
-                                                                    message = AnnotatedString(
-                                                                        text = context.getString(
-                                                                            R.string.how_would_you_like_to_trim
-                                                                        )
-                                                                    )
-                                                                )
-                                                            )
-                                                        }
+                                                            }/${true}"
+                                                        )
                                                     } else {
                                                         viewModel.addListItem(
                                                             PromptItemData(
@@ -358,7 +297,7 @@ fun PromptItem(
                                             .weight(1f)
                                             .wrapContentHeight()
                                             .padding(
-                                                end = if (aspectRatioChoiceList[index].iconResourceList != null) dimensionResource(
+                                                end = if (item.canvasChoiceList[index].iconResourceList != null) dimensionResource(
                                                     id = R.dimen.spacingMd
                                                 ) else 0.dp
                                             ), verticalArrangement = Arrangement.spacedBy(
@@ -369,7 +308,7 @@ fun PromptItem(
                                     ) {
                                         Text(
                                             modifier = Modifier.wrapContentSize(),
-                                            text = stringResource(id = aspectRatioChoiceList[index].typeStringResource),
+                                            text = stringResource(id = item.canvasChoiceList[index].typeStringResource),
                                             color = MaterialTheme.colorScheme.onBackground,
                                             style = MaterialTheme.typography.labelSmall,
                                             fontSize = 15.sp,
@@ -391,7 +330,7 @@ fun PromptItem(
                                     }
 
                                     val iconResourceList =
-                                        aspectRatioChoiceList[index].iconResourceList
+                                        item.canvasChoiceList[index].iconResourceList
                                     if (iconResourceList != null) {
                                         Row(
                                             modifier = Modifier.wrapContentSize(),
@@ -420,16 +359,20 @@ fun PromptItem(
                         }
                     }
 
-                    thumbnailBitmap != null -> {
+                    item.thumbnailBitmap != null -> {
+                        val isTappable = !isProcessing.value && !isTyping.value
                         Box(modifier = Modifier
                             .size(240.dp)
                             .clip(shape = MaterialTheme.shapes.small)
+                            .alpha(if (isTappable) 1f else 0.3f)
                             .border(
                                 shape = MaterialTheme.shapes.small,
                                 width = 1.dp,
-                                color = if (isAuthor) Color(color = 0XFF2C2C2C) else Color(color = 0XFF242620)
+                                color = if (item.isAuthor) Color(color = 0XFF2C2C2C) else Color(
+                                    color = 0XFF242620
+                                )
                             )
-                            .clickable {
+                            .clickable(enabled = isTappable) {
                                 navController.navigate(
                                     "MediaPlayerScreen/${
                                         Uri.encode(
@@ -440,14 +383,14 @@ fun PromptItem(
                                         )
                                     }/${
                                         Uri.encode(
-                                            videoUriString
+                                            item.videoUriString
                                         )
                                     }/${false}"
                                 )
                             }) {
                             Image(
                                 modifier = Modifier.fillMaxSize(),
-                                bitmap = thumbnailBitmap.asImageBitmap(),
+                                bitmap = item.thumbnailBitmap.asImageBitmap(),
                                 contentDescription = stringResource(R.string.video_thumbnail),
                                 contentScale = ContentScale.Crop
                             )
@@ -468,7 +411,7 @@ fun PromptItem(
                             ) {
                                 Text(
                                     modifier = Modifier.wrapContentSize(),
-                                    text = duration ?: stringResource(id = R.string._0_00),
+                                    text = item.duration ?: stringResource(id = R.string._0_00),
                                     color = MaterialTheme.colorScheme.onBackground,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Normal,
@@ -478,56 +421,174 @@ fun PromptItem(
                         }
                     }
 
-                    isLoading -> {
-                        val transitionState = rememberInfiniteTransition(label = "loading")
-                        val currentIndex by transitionState.animateValue(
-                            initialValue = 0,
-                            targetValue = 3,
-                            typeConverter = Int.VectorConverter,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(
-                                    durationMillis = 500, easing = LinearEasing
-                                ), repeatMode = RepeatMode.Restart
-                            ),
-                            label = "loading"
-                        )
-
-                        Row(
-                            modifier = Modifier
-                                .wrapContentSize()
-                                .padding(dimensionResource(id = R.dimen.spacingXxxs)),
-                            horizontalArrangement = Arrangement.spacedBy(
-                                space = dimensionResource(id = R.dimen.spacingXxxs)
+                    item.isLoading -> {
+                        Column {
+                            val transitionState = rememberInfiniteTransition(label = "loading")
+                            val currentIndex by transitionState.animateValue(
+                                initialValue = 0,
+                                targetValue = 3,
+                                typeConverter = Int.VectorConverter,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(
+                                        durationMillis = 500, easing = LinearEasing
+                                    ), repeatMode = RepeatMode.Restart
+                                ),
+                                label = "loading"
                             )
-                        ) {
-                            repeat(3) { index ->
-                                Box(
+
+                            Row(
+                                modifier = Modifier
+                                    .wrapContentSize()
+                                    .padding(dimensionResource(id = R.dimen.spacingXxxs)),
+                                horizontalArrangement = Arrangement.spacedBy(
+                                    space = dimensionResource(id = R.dimen.spacingXxxs)
+                                )
+                            ) {
+                                repeat(3) { index ->
+                                    Box(
+                                        modifier = Modifier
+                                            .size(dimensionResource(id = R.dimen.spacingXs))
+                                            .background(
+                                                color = if (index == currentIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                                shape = CircleShape
+                                            )
+                                    )
+                                }
+                            }
+
+                            if (item.loadingMessage.value.isNotEmpty()) {
+                                if (!item.hasTyped.value) {
+                                    viewModel.typingEffect(
+                                        item = item,
+                                        isTyping = isTyping,
+                                        hapticFeedback = hapticFeedback
+                                    ) {
+                                        val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                                        if (lastIndex >= 0) {
+                                            scope.launch {
+                                                listState.animateScrollToItem(lastIndex)
+                                            }
+                                        }
+                                        item.hasTyped.value = true
+                                        if (viewModel.waitingMessageJob?.isActive != true) {
+                                            generateWaitingMessage(
+                                                context = context,
+                                                promptViewModel = viewModel,
+                                                scope = scope
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Text(
                                     modifier = Modifier
-                                        .size(dimensionResource(id = R.dimen.spacingXs))
-                                        .background(
-                                            color = if (index == currentIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                                            shape = CircleShape
-                                        )
+                                        .wrapContentSize()
+                                        .padding(top = 10.dp),
+                                    text = item.displayedText.value,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                        fontWeight = FontWeight.Normal,
+                                        textAlign = TextAlign.Start
+                                    )
                                 )
                             }
                         }
                     }
 
                     else -> {
-                        if (onClick == null) {
+                        if (!item.hasTyped.value) {
+                            viewModel.typingEffect(
+                                item = item,
+                                isTyping = isTyping,
+                                hapticFeedback = hapticFeedback
+                            ) {
+                                val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                                if (lastIndex >= 0) {
+                                    scope.launch {
+                                        listState.animateScrollToItem(lastIndex)
+                                    }
+                                }
+                                item.hasTyped.value = true
+                                if (item.trimRanges != null) {
+                                    if (item.trimRanges.isNotEmpty()) {
+                                        var width = getAllVideoMetadata(
+                                            context = context,
+                                            videoUri = Uri.parse(viewModel.mutableVideoUriString)
+                                        )?.width
+                                        var height = getAllVideoMetadata(
+                                            context = context,
+                                            videoUri = Uri.parse(viewModel.mutableVideoUriString)
+                                        )?.height
+                                        if (width == null || height == null || height == 0 || convertDimensionsToAspectRatio(
+                                                context = context,
+                                                width = width,
+                                                height = height
+                                            ) == context.getString(R.string.unknown_aspect_ratio)
+                                        ) {
+                                            width = 1920
+                                            height = 1080
+                                        }
+                                        val canvasChoiceList = listOf(
+                                            AspectRatioChoiceItemData(
+                                                typeStringResource = R.string.square,
+                                                aspectRatioWidth = 1080,
+                                                aspectRatioHeight = 1080,
+                                                iconResourceList = listOf(
+                                                    R.drawable.tiktok,
+                                                    R.drawable.facebook,
+                                                    R.drawable.instagram_2
+                                                )
+                                            ), AspectRatioChoiceItemData(
+                                                typeStringResource = R.string.vertical,
+                                                aspectRatioWidth = 1080,
+                                                aspectRatioHeight = 1920,
+                                                iconResourceList = listOf(
+                                                    R.drawable.tiktok,
+                                                    R.drawable.facebook,
+                                                    R.drawable.instagram_2,
+                                                    R.drawable.youtube,
+                                                    R.drawable.snapchat
+                                                )
+                                            ), AspectRatioChoiceItemData(
+                                                typeStringResource = R.string.horizontal,
+                                                aspectRatioWidth = 1920,
+                                                aspectRatioHeight = 1080,
+                                                iconResourceList = listOf(R.drawable.youtube)
+                                            ), AspectRatioChoiceItemData(
+                                                typeStringResource = R.string.original,
+                                                aspectRatioWidth = width,
+                                                aspectRatioHeight = height,
+                                                iconResourceList = null
+                                            )
+                                        )
+
+                                        viewModel.addListItem(
+                                            PromptItemData(
+                                                videoUriString = viewModel.mutableVideoUriString,
+                                                showCanvasOptions = true,
+                                                trimRanges = item.trimRanges,
+                                                canvasChoiceList = canvasChoiceList
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        if (item.onClick == null) {
                             Text(
                                 modifier = Modifier.wrapContentSize(),
-                                text = message,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Normal,
-                                textAlign = TextAlign.Start
+                                text = if (item.isAuthor) item.message else item.displayedText.value,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    fontWeight = FontWeight.Normal,
+                                    textAlign = TextAlign.Start
+                                )
                             )
                         } else {
                             ClickableText(
-                                text = message,
-                                onClick = onClick,
                                 modifier = Modifier.wrapContentSize(),
+                                text = if (item.isAuthor) item.message else item.displayedText.value,
+                                onClick = item.onClick,
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = MaterialTheme.colorScheme.onBackground,
                                     fontWeight = FontWeight.Normal,

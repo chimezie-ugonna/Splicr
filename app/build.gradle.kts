@@ -18,14 +18,30 @@ android {
         applicationId = "com.splicr.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 25
-        versionName = "7.0.0"
+        versionCode = 26
+        versionName = "8.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
         signingConfig = signingConfigs.getByName("debug")
+        android.buildFeatures.buildConfig = true
+        buildConfigField(
+            "String",
+            "CLOUDINARY_CLOUD_NAME",
+            "\"${System.getenv("CLOUDINARY_CLOUD_NAME") ?: project.properties["CLOUDINARY_CLOUD_NAME"]}\""
+        )
+        buildConfigField(
+            "String",
+            "CLOUDINARY_API_KEY",
+            "\"${System.getenv("CLOUDINARY_API_KEY") ?: project.properties["CLOUDINARY_API_KEY"]}\""
+        )
+        buildConfigField(
+            "String",
+            "CLOUDINARY_API_SECRET",
+            "\"${System.getenv("CLOUDINARY_API_SECRET") ?: project.properties["CLOUDINARY_API_SECRET"]}\""
+        )
     }
 
     signingConfigs {
@@ -134,9 +150,6 @@ android {
                 "**/libavutil.so",
                 "**/libavutil_neon.so",
                 "**/libc++_shared.so",
-                "**/libffmpegkit.so",
-                "**/libffmpegkit_abidetect.so",
-                "**/libffmpegkit_armv7a_neon.so",
                 "**/libswresample.so",
                 "**/libswresample_neon.so",
                 "**/libswscale.so",
@@ -186,7 +199,6 @@ dependencies {
     implementation(libs.ui)
     implementation(libs.billing)
     implementation(libs.accompanist.permissions)
-    implementation(libs.ffmpeg.kit.full)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
     implementation(libs.transcoder)
@@ -205,6 +217,7 @@ dependencies {
     testImplementation(libs.ktor.client.mock)
     androidTestImplementation(libs.ktor.client.mock)
     implementation(libs.androidx.activity.ktx)
+    implementation(libs.cloudinary.android)
 
 }
 

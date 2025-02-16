@@ -1,20 +1,20 @@
 [versions]
 accompanistPermissions = "0.36.0"
 accompanistPlaceholderMaterial = "0.36.0"
-activityKtx = "1.9.3"
-agp = "8.7.3"
+activityKtx = "1.10.0"
+agp = "8.8.1"
 appcompat = "1.7.0"
 billing = "7.1.1"
+cloudinaryAndroid = "3.0.2"
 coilCompose = "2.7.0"
 constraintlayoutCompose = "1.1.0"
 coreSplashscreen = "1.0.1"
-credentials = "1.5.0-beta01"
-ffmpegKitFull = "6.0-2"
-firebaseAuth = "23.1.0"
-firebaseBom = "33.7.0"
-firebaseVertexai = "16.0.2"
+credentials = "1.5.0-rc01"
+firebaseAuth = "23.2.0"
+firebaseBom = "33.9.0"
+firebaseVertexai = "16.1.0"
 googleServices = "4.4.2"
-gradle = "8.7.3"
+gradle = "8.8.1"
 kotlin = "2.1.0"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -24,17 +24,17 @@ ktorClientAndroid = "2.3.12"
 ktorClientCore = "2.3.12"
 ktorClientMock = "2.3.12"
 lifecycleRuntimeKtx = "2.8.7"
-activityCompose = "1.9.3"
-composeBom = "2024.11.00"
-media3Ui = "1.5.0"
-navigationRuntimeKtx = "2.8.4"
-navigationCompose = "2.8.4"
+activityCompose = "1.10.0"
+composeBom = "2025.01.01"
+media3Ui = "1.5.1"
+navigationRuntimeKtx = "2.8.6"
+navigationCompose = "2.8.6"
 playServicesAuth = "21.3.0"
 review = "2.0.2"
-ui = "1.7.5"
-uiTextGoogleFonts = "1.7.5"
-runtimeLivedata = "1.7.5"
-media3Exoplayer = "1.5.0"
+ui = "1.7.7"
+uiTextGoogleFonts = "1.7.7"
+runtimeLivedata = "1.7.7"
+media3Exoplayer = "1.5.1"
 googleid = "1.1.1"
 reviewKtx = "2.0.2"
 firebaseAppcheckDebug = "18.0.0"
@@ -52,9 +52,9 @@ androidx-credentials-play-services-auth = { module = "androidx.credentials:crede
 androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3Ui" }
 androidx-ui-text-google-fonts = { module = "androidx.compose.ui:ui-text-google-fonts", version.ref = "uiTextGoogleFonts" }
 billing = { module = "com.android.billingclient:billing", version.ref = "billing" }
+cloudinary-android = { module = "com.cloudinary:cloudinary-android", version.ref = "cloudinaryAndroid" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version = "2.11.0" }
-ffmpeg-kit-full = { module = "com.arthenica:ffmpeg-kit-full", version.ref = "ffmpegKitFull" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-appcheck-playintegrity = { module = "com.google.firebase:firebase-appcheck-playintegrity" }
 firebase-auth = { module = "com.google.firebase:firebase-auth" }

@@ -18,12 +18,10 @@ import com.google.firebase.vertexai.type.Part
 import com.google.firebase.vertexai.type.TextPart
 import com.google.firebase.vertexai.vertexAI
 import com.splicr.app.R
-import com.splicr.app.data.AspectRatioChoiceItemData
 import com.splicr.app.data.PromptItemData
 import com.splicr.app.data.TrimRangeData
 import com.splicr.app.utils.MediaConfigurationUtil.checkIfVideoUrl
-import com.splicr.app.utils.MediaConfigurationUtil.convertDimensionsToAspectRatio
-import com.splicr.app.utils.MediaConfigurationUtil.downloadVideoToLocal
+import com.splicr.app.utils.MediaConfigurationUtil.downloadMediaToLocal
 import com.splicr.app.utils.MediaConfigurationUtil.formatDuration
 import com.splicr.app.utils.MediaConfigurationUtil.getAllVideoMetadata
 import com.splicr.app.viewModel.PromptViewModel
@@ -49,12 +47,13 @@ object SplicrBrainUtil {
         promptViewModel: PromptViewModel
     ) {
         isProcessing.value = true
-        val item = PromptItemData(
-            isLoading = true
+        promptViewModel.addListItem(
+            PromptItemData(
+                isLoading = true
+            )
         )
-        promptViewModel.addListItem(item)
 
-        startWaitingMessageGeneration(
+        generateWaitingMessage(
             context = context, promptViewModel = promptViewModel, scope = scope
         )
 
@@ -65,11 +64,15 @@ object SplicrBrainUtil {
                         videoUrl = promptValue
                     )
                     result.onSuccess {
-                        val result2 = downloadVideoToLocal(
-                            context = context, videoUrl = promptValue
+                        val result2 = downloadMediaToLocal(
+                            context = context, mediaUrl = promptValue
                         )
                         result2.onSuccess {
-                            promptViewModel.removeListItem(item)
+                            promptViewModel.removeListItem(promptViewModel.listItems[promptViewModel.listItems.size - 1])
+                            if (promptViewModel.waitingMessageJob?.isActive == true) {
+                                promptViewModel.waitingMessageJob?.cancel()
+                                promptViewModel.previousWaitingMessageResponse = ""
+                            }
 
                             if (subscriptionStatus.value != SubscriptionStatus.NONE) {
                                 val thumbnail = getAllVideoMetadata(
@@ -94,13 +97,13 @@ object SplicrBrainUtil {
                                     )
                                     promptViewModel.addListItem(
                                         PromptItemData(
-                                            message = AnnotatedString(text = context.getString(R.string.how_would_you_like_to_trim))
+                                            message = AnnotatedString(text = context.getString(R.string.how_would_you_like_to_trim)),
                                         )
                                     )
                                 } else {
                                     promptViewModel.addListItem(
                                         PromptItemData(
-                                            message = AnnotatedString(text = context.getString(R.string.oops_we_were_able_to_retrieve_the_media_from_the_url_but_something_seems_to_be_wrong_with_the_file_it_might_be_corrupted_or_in_an_unsupported_format_please_try_again_with_a_different_url_or_check_if_the_file_is_accessible_and_valid))
+                                            message = AnnotatedString(text = context.getString(R.string.oops_we_were_able_to_retrieve_the_media_from_the_url_but_something_seems_to_be_wrong_with_the_file_it_might_be_corrupted_or_in_an_unsupported_format_please_try_again_with_a_different_url_or_check_if_the_file_is_accessible_and_valid)),
                                         )
                                     )
                                 }
@@ -128,7 +131,11 @@ object SplicrBrainUtil {
                                 })
                             }
                         }.onFailure {
-                            promptViewModel.removeListItem(item)
+                            promptViewModel.removeListItem(promptViewModel.listItems[promptViewModel.listItems.size - 1])
+                            if (promptViewModel.waitingMessageJob?.isActive == true) {
+                                promptViewModel.waitingMessageJob?.cancel()
+                                promptViewModel.previousWaitingMessageResponse = ""
+                            }
 
                             promptViewModel.addListItem(
                                 PromptItemData(
@@ -145,7 +152,11 @@ object SplicrBrainUtil {
                             )
                         }
                     }.onFailure {
-                        promptViewModel.removeListItem(item)
+                        promptViewModel.removeListItem(promptViewModel.listItems[promptViewModel.listItems.size - 1])
+                        if (promptViewModel.waitingMessageJob?.isActive == true) {
+                            promptViewModel.waitingMessageJob?.cancel()
+                            promptViewModel.previousWaitingMessageResponse = ""
+                        }
 
                         promptViewModel.addListItem(
                             PromptItemData(
@@ -163,8 +174,12 @@ object SplicrBrainUtil {
                     }
                     isProcessing.value = false
                 }.invokeOnCompletion {
-                    if (it is CancellationException && promptViewModel.listItems.lastOrNull() == item) {
-                        promptViewModel.removeListItem(item)
+                    if (it is CancellationException && promptViewModel.listItems.lastOrNull()?.isLoading == true) {
+                        promptViewModel.removeListItem(promptViewModel.listItems[promptViewModel.listItems.size - 1])
+                        if (promptViewModel.waitingMessageJob?.isActive == true) {
+                            promptViewModel.waitingMessageJob?.cancel()
+                            promptViewModel.previousWaitingMessageResponse = ""
+                        }
                         promptViewModel.addListItem(
                             PromptItemData(
                                 message = AnnotatedString(
@@ -186,7 +201,6 @@ object SplicrBrainUtil {
                     context = context,
                     promptValue = promptValue,
                     promptViewModel = promptViewModel,
-                    item = item,
                     isProcessing = isProcessing,
                     scope = scope
                 )
@@ -196,52 +210,60 @@ object SplicrBrainUtil {
                 context = context,
                 promptValue = promptValue,
                 promptViewModel = promptViewModel,
-                item = item,
                 isProcessing = isProcessing,
                 scope = scope
             )
         }
     }
 
-    fun startWaitingMessageGeneration(
+    fun generateWaitingMessage(
         context: Context, promptViewModel: PromptViewModel, scope: CoroutineScope
     ) {
-        val item = PromptItemData(isLoading = true)
-        var previousResponse: String? = null
-        scope.launch(Dispatchers.IO) {
+        if (promptViewModel.waitingMessageJob?.isActive == true) return
+
+        promptViewModel.waitingMessageJob = scope.launch(Dispatchers.IO) {
             delay(30_000)
 
-            while (promptViewModel.listItems.lastOrNull() == item) {
-                askAi(
-                    context = context, parts = listOf(
-                        TextPart(context.getString(R.string.waiting_message_prompt)), TextPart(
-                            context.getString(
-                                R.string.this_was_your_previous_response, previousResponse
-                            )
+            askAi(
+                context = context, parts = listOf(
+                    TextPart(context.getString(R.string.waiting_message_prompt)), TextPart(
+                        context.getString(
+                            R.string.these_are_your_previous_responses,
+                            promptViewModel.previousWaitingMessageResponse
                         )
                     )
-                ).onSuccess {
-                    if (!it.isNullOrEmpty() && it != previousResponse && it !in listOf(
-                            context.getString(R.string.i_m_having_a_bit_of_trouble_responding_to_your_request_right_now_i_ll_need_you_to_try_again_later),
-                            context.getString(R.string.it_seems_i_can_t_reach_the_internet_at_the_moment_please_check_your_connection_and_give_it_another_go)
-                        )
-                    ) {
-                        previousResponse = it
-                        withContext(Dispatchers.Main) {
-                            if (promptViewModel.listItems.lastOrNull() == item) {
-                                promptViewModel.removeListItem(item)
-                                promptViewModel.addListItem(
-                                    PromptItemData(
-                                        message = AnnotatedString(text = it.trim())
-                                    )
-                                )
-                                promptViewModel.addListItem(item)
-                            }
+                )
+            ).onSuccess {
+                if (!it.isNullOrEmpty() && it != promptViewModel.previousWaitingMessageResponse && it !in listOf(
+                        context.getString(R.string.i_m_having_a_bit_of_trouble_responding_to_your_request_right_now_i_ll_need_you_to_try_again_later),
+                        context.getString(R.string.it_seems_i_can_t_reach_the_internet_at_the_moment_please_check_your_connection_and_give_it_another_go)
+                    )
+                ) {
+                    if (promptViewModel.previousWaitingMessageResponse.isNotEmpty()) {
+                        promptViewModel.previousWaitingMessageResponse += "+$it"
+                    } else {
+                        promptViewModel.previousWaitingMessageResponse = it
+                    }
+                    withContext(Dispatchers.Main) {
+                        if (promptViewModel.listItems.lastOrNull()?.isLoading == true) {
+                            promptViewModel.updateMessageForItem(
+                                position = promptViewModel.listItems.size - 1,
+                                newMessage = it.trim()
+                            )
                         }
                     }
-                    delay(30_000)
-                }.onFailure {
-                    delay(30_000)
+                } else {
+                    if (promptViewModel.listItems.lastOrNull()?.isLoading == true) {
+                        generateWaitingMessage(
+                            context = context, promptViewModel = promptViewModel, scope = scope
+                        )
+                    }
+                }
+            }.onFailure {
+                if (promptViewModel.listItems.lastOrNull()?.isLoading == true) {
+                    generateWaitingMessage(
+                        context = context, promptViewModel = promptViewModel, scope = scope
+                    )
                 }
             }
         }
@@ -251,7 +273,6 @@ object SplicrBrainUtil {
         context: Context,
         promptValue: String,
         promptViewModel: PromptViewModel,
-        item: PromptItemData,
         isProcessing: MutableState<Boolean>,
         scope: CoroutineScope
     ) {
@@ -261,10 +282,14 @@ object SplicrBrainUtil {
             )?.duration else null
 
         if (duration == null) {
-            promptViewModel.removeListItem(item)
+            promptViewModel.removeListItem(promptViewModel.listItems[promptViewModel.listItems.size - 1])
+            if (promptViewModel.waitingMessageJob?.isActive == true) {
+                promptViewModel.waitingMessageJob?.cancel()
+                promptViewModel.previousWaitingMessageResponse = ""
+            }
             promptViewModel.addListItem(
                 PromptItemData(
-                    message = AnnotatedString(text = context.getString(R.string.oops_something_seems_to_be_wrong_with_the_file_it_might_be_corrupted_or_in_an_unsupported_format_please_try_again_with_a_different_url_or_check_if_the_file_is_accessible_and_valid))
+                    message = AnnotatedString(text = context.getString(R.string.oops_something_seems_to_be_wrong_with_the_file_it_might_be_corrupted_or_in_an_unsupported_format_please_try_again_with_a_different_url_or_check_if_the_file_is_accessible_and_valid)),
                 )
             )
         } else {
@@ -291,7 +316,6 @@ object SplicrBrainUtil {
                     displayAspectRatioOptions(
                         context = context,
                         promptViewModel = promptViewModel,
-                        item = item,
                         duration = duration,
                         isProcessing = isProcessing,
                         responseText = it
@@ -300,18 +324,16 @@ object SplicrBrainUtil {
                     displayAspectRatioOptions(
                         context = context,
                         promptViewModel = promptViewModel,
-                        item = item,
                         duration = duration,
                         isProcessing = isProcessing,
                         responseText = it.localizedMessage
                     )
                 }
             }.invokeOnCompletion {
-                if (it is CancellationException && promptViewModel.listItems.lastOrNull() == item) {
+                if (it is CancellationException && promptViewModel.listItems.lastOrNull()?.isLoading == true) {
                     displayAspectRatioOptions(
                         context = context,
                         promptViewModel = promptViewModel,
-                        item = item,
                         duration = duration,
                         isProcessing = isProcessing,
                         responseText = context.getString(R.string.the_operation_was_interrupted_if_this_wasn_t_intentional_you_can_try_again)
@@ -319,7 +341,6 @@ object SplicrBrainUtil {
                     displayAspectRatioOptions(
                         context = context,
                         promptViewModel = promptViewModel,
-                        item = item,
                         duration = duration,
                         isProcessing = isProcessing,
                         responseText = context.getString(R.string.how_would_you_like_to_trim)
@@ -348,18 +369,34 @@ object SplicrBrainUtil {
     private fun displayAspectRatioOptions(
         context: Context,
         promptViewModel: PromptViewModel,
-        item: PromptItemData,
         duration: Long,
         isProcessing: MutableState<Boolean>,
         responseText: String?
     ) {
 
-        promptViewModel.removeListItem(item)
+        promptViewModel.removeListItem(promptViewModel.listItems[promptViewModel.listItems.size - 1])
+        if (promptViewModel.waitingMessageJob?.isActive == true) {
+            promptViewModel.waitingMessageJob?.cancel()
+            promptViewModel.previousWaitingMessageResponse = ""
+        }
 
-        if (responseText == null) {
+        if (responseText.isNullOrEmpty() || responseText == context.getString(R.string.i_m_having_a_bit_of_trouble_responding_to_your_request_right_now_i_ll_need_you_to_try_again_later) || responseText == context.getString(
+                R.string.it_seems_i_can_t_reach_the_internet_at_the_moment_please_check_your_connection_and_give_it_another_go
+            )
+        ) {
             promptViewModel.addListItem(
                 PromptItemData(
-                    message = AnnotatedString(text = context.getString(R.string.oops_i_ran_into_an_issue_while_processing_your_request_let_s_try_that_again_how_would_you_like_me_to_trim))
+                    message = AnnotatedString(
+                        text = when (responseText) {
+                            context.getString(R.string.i_m_having_a_bit_of_trouble_responding_to_your_request_right_now_i_ll_need_you_to_try_again_later), context.getString(
+                                R.string.it_seems_i_can_t_reach_the_internet_at_the_moment_please_check_your_connection_and_give_it_another_go
+                            ) -> responseText
+
+                            else -> context.getString(
+                                R.string.oops_i_ran_into_an_issue_while_processing_your_request_let_s_try_that_again_how_would_you_like_me_to_trim
+                            )
+                        }
+                    ),
                 )
             )
         } else {
@@ -367,72 +404,14 @@ object SplicrBrainUtil {
             if (trimRanges != null) {
                 promptViewModel.addListItem(
                     PromptItemData(
-                        message = AnnotatedString(text = responseText.trim())
+                        message = AnnotatedString(text = responseText.trim()),
+                        trimRanges = trimRanges
                     )
                 )
-                if (trimRanges.isNotEmpty()) {
-                    var width = getAllVideoMetadata(
-                        context = context,
-                        videoUri = Uri.parse(promptViewModel.mutableVideoUriString)
-                    )?.width
-                    var height = getAllVideoMetadata(
-                        context = context,
-                        videoUri = Uri.parse(promptViewModel.mutableVideoUriString)
-                    )?.height
-                    if (width == null || height == null || height == 0 || convertDimensionsToAspectRatio(
-                            context = context, width = width, height = height
-                        ) == context.getString(R.string.unknown_aspect_ratio)
-                    ) {
-                        width = 1920
-                        height = 1080
-                    }
-                    val canvasChoiceList = listOf(
-                        AspectRatioChoiceItemData(
-                            typeStringResource = R.string.square,
-                            aspectRatioWidth = 1080,
-                            aspectRatioHeight = 1080,
-                            iconResourceList = listOf(
-                                R.drawable.tiktok, R.drawable.facebook, R.drawable.instagram_2
-                            )
-                        ), AspectRatioChoiceItemData(
-                            typeStringResource = R.string.vertical,
-                            aspectRatioWidth = 1080,
-                            aspectRatioHeight = 1920,
-                            iconResourceList = listOf(
-                                R.drawable.tiktok,
-                                R.drawable.facebook,
-                                R.drawable.instagram_2,
-                                R.drawable.youtube,
-                                R.drawable.snapchat
-                            )
-                        ), AspectRatioChoiceItemData(
-                            typeStringResource = R.string.horizontal,
-                            aspectRatioWidth = 1920,
-                            aspectRatioHeight = 1080,
-                            iconResourceList = listOf(R.drawable.youtube)
-                        ), AspectRatioChoiceItemData(
-                            typeStringResource = R.string.original,
-                            aspectRatioWidth = width,
-                            aspectRatioHeight = height,
-                            iconResourceList = null
-                        )
-                    )
-
-                    promptViewModel.addListItem(
-                        PromptItemData(
-                            videoUriString = promptViewModel.mutableVideoUriString,
-                            showCanvasOptions = true,
-                            trimRanges = trimRanges,
-                            isProcessing = isProcessing,
-                            viewModel = promptViewModel,
-                            canvasChoiceList = canvasChoiceList
-                        )
-                    )
-                }
             } else {
                 promptViewModel.addListItem(
                     PromptItemData(
-                        message = AnnotatedString(text = context.getString(R.string.your_request_is_invalid_because_it_exceeds_the_video_s_duration_please_adjust_the_times_and_try_again))
+                        message = AnnotatedString(text = context.getString(R.string.your_request_is_invalid_because_it_exceeds_the_video_s_duration_please_adjust_the_times_and_try_again)),
                     )
                 )
             }
@@ -442,13 +421,10 @@ object SplicrBrainUtil {
     }
 
     private fun extractTrimRanges(text: String, videoDurationMillis: Long): List<TrimRangeData>? {
-        // Remove extra carriage returns and trim the text
         val cleanText = text.trim().replace("\r", "")
 
-        // Split lines and filter out any empty lines
         val lines = cleanText.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
 
-        // Validate the number of lines and format
         if (lines.size % 2 != 0 || lines.any { !it.startsWith("Start time: ") && !it.startsWith("End time: ") }) {
             return emptyList()
         }
@@ -459,7 +435,6 @@ object SplicrBrainUtil {
             val startTimeLine = lines[i]
             val endTimeLine = lines[i + 1]
 
-            // Check if lines are properly formatted
             if (!startTimeLine.startsWith("Start time: ") || !endTimeLine.startsWith("End time: ")) {
                 return emptyList()
             }
@@ -467,16 +442,13 @@ object SplicrBrainUtil {
             val startTime = startTimeLine.removePrefix("Start time: ").trim()
             val endTime = endTimeLine.removePrefix("End time: ").trim()
 
-            // Validate the time format (HH:MM:SS)
             if (!isValidTimeFormat(startTime) || !isValidTimeFormat(endTime)) {
                 return emptyList()
             }
 
-            // Convert start and end times to milliseconds
             val startTimeMillis = convertTimeToMillis(startTime)
             val endTimeMillis = convertTimeToMillis(endTime)
 
-            // Check if times exceed the video duration
             if (startTimeMillis > videoDurationMillis || endTimeMillis > videoDurationMillis) {
                 return null
             }

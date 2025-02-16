@@ -4,8 +4,6 @@ package com.splicr.app.ui.screens
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Bitmap
-import android.net.Uri
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,14 +14,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
@@ -49,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
@@ -62,6 +60,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.splicr.app.R
@@ -72,22 +71,20 @@ import com.splicr.app.ui.components.CustomSnackBar
 import com.splicr.app.ui.components.CustomTopNavigationBar
 import com.splicr.app.ui.components.PremiumText
 import com.splicr.app.ui.components.PrimaryButton
-import com.splicr.app.ui.components.ThumbnailImage
 import com.splicr.app.ui.theme.SplicrTheme
 import com.splicr.app.utils.MediaConfigurationUtil.convertDimensionsToAspectRatio
 import com.splicr.app.utils.MediaConfigurationUtil.exportVideo
+import com.splicr.app.utils.MediaConfigurationUtil.fetchCloudinaryMetadata
 import com.splicr.app.utils.MediaConfigurationUtil.formatFileSize
-import com.splicr.app.utils.MediaConfigurationUtil.getAllVideoMetadata
-import com.splicr.app.utils.MediaConfigurationUtil.getOutputFilePath
+import com.splicr.app.utils.MediaConfigurationUtil.getUserId
 import com.splicr.app.viewModel.HomeViewModel
 import com.splicr.app.viewModel.SubscriptionStatus
 import com.splicr.app.viewModel.SubscriptionViewModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @SuppressLint("DiscouragedApi")
 @Composable
@@ -99,17 +96,12 @@ fun MediaSplicedScreen(
     canvasItemData: CanvasItemData = CanvasItemData(),
     videoUriString: String = "",
     source: String = "",
-    currentPosition: Long = 0,
-    isPlaying: Boolean = false,
     subscriptionViewModel: SubscriptionViewModel = viewModel(),
     homeViewModel: HomeViewModel = viewModel()
 ) {
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
-            color = MaterialTheme.colorScheme.background
+            modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
         ) {
             Box(
                 modifier = Modifier
@@ -136,7 +128,7 @@ fun MediaSplicedScreen(
                 val snackBarIsError = remember {
                     mutableStateOf(true)
                 }
-                val filePath = rememberSaveable {
+                val fileUriString = rememberSaveable {
                     mutableStateOf("")
                 }
 
@@ -149,22 +141,18 @@ fun MediaSplicedScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .statusBarsPadding()
                         .padding(
-                            top = 72.dp, bottom = dimensionResource(
+                            vertical = dimensionResource(
                                 id = R.dimen.spacingXl
                             )
                         )
+                        .navigationBarsPadding()
                 ) {
                     CustomTopNavigationBar(modifier = Modifier.fillMaxWidth(),
                         startImageResource = R.drawable.back,
                         startStringResource = R.string.go_back,
                         startOnClick = {
-                            navController.previousBackStackEntry?.savedStateHandle?.set(
-                                "currentPosition", currentPosition
-                            )
-                            navController.previousBackStackEntry?.savedStateHandle?.set(
-                                "isPlaying", isPlaying
-                            )
                             navController.popBackStack()
                         },
                         centerComposable = { AppNameText(modifier = Modifier.align(Alignment.Center)) },
@@ -202,21 +190,6 @@ fun MediaSplicedScreen(
                     val loaderDescription = rememberSaveable {
                         mutableIntStateOf(R.string.saving_your_medium_to_your_device_thank_you_for_your_patience)
                     }
-                    val thumbnailBitmap = remember(videoUriString) {
-                        mutableStateOf<Bitmap?>(null)
-                    }
-
-                    LaunchedEffect(videoUriString) {
-                        if (canvasItemData.thumbnailUrl.isEmpty() && thumbnailBitmap.value == null) {
-                            val bitmap = getAllVideoMetadata(
-                                context = context, videoUri = Uri.parse(videoUriString)
-                            )?.thumbnail
-
-                            if (bitmap != null) {
-                                thumbnailBitmap.value = bitmap
-                            }
-                        }
-                    }
 
                     Column(
                         modifier = Modifier
@@ -243,9 +216,8 @@ fun MediaSplicedScreen(
                             navController = navController,
                             snackBarMessageResource = snackBarMessageResource,
                             snackBarHostState = snackBarHostState,
-                            filePath = filePath.value,
+                            fileUriString = fileUriString.value,
                             canvasItemData = canvasItemData,
-                            thumbnailBitmap = thumbnailBitmap.value,
                             scope = scope
                         )
 
@@ -285,20 +257,46 @@ fun MediaSplicedScreen(
                             textAlign = TextAlign.Center
                         )
 
-                        Text(
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
-                                .padding(top = dimensionResource(id = R.dimen.spacingXxxs)),
-                            text = formatFileSize(canvasItemData.size),
-                            color = MaterialTheme.colorScheme.tertiary,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Normal,
-                            textAlign = TextAlign.Center
-                        )
+                        val size = rememberSaveable {
+                            mutableStateOf("")
+                        }
 
-                        ThumbnailImage(
-                            thumbnailBitmap = thumbnailBitmap.value,
-                            canvasItemData = canvasItemData,
+                        LaunchedEffect(Unit) {
+                            if (canvasItemData.size == null) {
+                                size.value = context.getString(R.string.retrieving_size)
+                                fetchCloudinaryMetadata(publicId = "temp_video/${getUserId()}").onSuccess {
+                                    withContext(Dispatchers.Main) {
+                                        if (it != null) {
+                                            size.value = formatFileSize(it)
+                                        } else {
+                                            size.value = ""
+                                        }
+                                    }
+                                }.onFailure {
+                                    it.printStackTrace()
+                                    withContext(Dispatchers.Main) {
+                                        size.value = ""
+                                    }
+                                }
+                            } else {
+                                size.value = formatFileSize(canvasItemData.size!!)
+                            }
+                        }
+
+                        if (size.value.isNotEmpty()) {
+                            Text(
+                                modifier = Modifier
+                                    .align(Alignment.CenterHorizontally)
+                                    .padding(top = dimensionResource(id = R.dimen.spacingXxxs)),
+                                text = size.value,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Normal,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+                        AsyncImage(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(240.dp)
@@ -308,7 +306,10 @@ fun MediaSplicedScreen(
                                     width = 1.dp,
                                     color = MaterialTheme.colorScheme.surface,
                                     shape = MaterialTheme.shapes.extraSmall
-                                )
+                                ),
+                            model = canvasItemData.thumbnailUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop
                         )
 
                         Text(
@@ -402,88 +403,29 @@ fun MediaSplicedScreen(
                         }
                     }
 
-                    Column(
+                    PrimaryButton(
                         modifier = Modifier.padding(
                             top = dimensionResource(id = R.dimen.spacingMd)
-                        )
-                    ) {
-                        if (selectedItemIndex.intValue == 0 && subscriptionStatus.value == SubscriptionStatus.NONE || selectedItemIndex.intValue == 1 && subscriptionStatus.value != SubscriptionStatus.NONE) {
-                            Text(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(
-                                        bottom = dimensionResource(id = R.dimen.spacingMd)
-                                    ),
-                                text = if (selectedItemIndex.intValue == 0) {
-                                    if (subscriptionStatus.value == SubscriptionStatus.NONE) {
-                                        stringResource(R.string.for_high_quality_get_splicr_premium)
-                                    } else {
-                                        ""
-                                    }
-                                } else {
-                                    if (subscriptionStatus.value != SubscriptionStatus.NONE) {
-                                        stringResource(R.string._4k_media_may_use_codecs_not_supported_on_all_devices_check_compatibility_before_exporting)
-                                    } else {
-                                        ""
-                                    }
-                                },
-                                color = MaterialTheme.colorScheme.tertiary,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontSize = 12.sp,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-
-                        PrimaryButton(
-                            textResource = if (selectedItemIndex.intValue == 1) {
-                                if (subscriptionStatus.value != SubscriptionStatus.NONE) {
-                                    R.string.export
-                                } else {
-                                    R.string.get_premium
-                                }
-                            } else {
+                        ), textResource = if (selectedItemIndex.intValue == 1) {
+                            if (subscriptionStatus.value != SubscriptionStatus.NONE) {
                                 R.string.export
-                            }
-                        ) {
-                            val path = getOutputFilePath(
-                                context = context, filename = SimpleDateFormat(
-                                    "yyyyMMdd_HHmmss", Locale.ENGLISH
-                                ).format(
-                                    Date()
-                                )
-                            )
-                            filePath.value = "$path.mp4"
-                            if (selectedItemIndex.intValue == 1) {
-                                if (subscriptionStatus.value != SubscriptionStatus.NONE) {
-                                    export(
-                                        context = context,
-                                        resolution = "4k",
-                                        inputUri = Uri.parse(canvasItemData.url.ifEmpty { videoUriString }),
-                                        outputFilePath = filePath.value,
-                                        thumbnailPath = "$path.jpg",
-                                        showSavedMediumBottomSheet = showSavedMediumBottomSheet,
-                                        showExportingMediumBottomSheet = showExportingMediumBottomSheet,
-                                        scope = scope,
-                                        snackBarMessage = snackBarMessage,
-                                        snackBarIsError = snackBarIsError,
-                                        snackBarHostState = snackBarHostState,
-                                        snackBarMessageResource = snackBarMessageResource,
-                                        source = source,
-                                        loaderDescription = loaderDescription,
-                                        canvasItemData = canvasItemData,
-                                        thumbnailBitmap = thumbnailBitmap.value,
-                                        homeViewModel = homeViewModel
-                                    )
-                                } else {
-                                    navController.navigate("ManageSubscriptionScreen")
-                                }
                             } else {
+                                R.string.get_premium
+                            }
+                        } else {
+                            R.string.export
+                        }
+                    ) {
+                        if (selectedItemIndex.intValue == 1) {
+                            if (subscriptionStatus.value != SubscriptionStatus.NONE) {
                                 export(
                                     context = context,
-                                    resolution = "720p",
-                                    inputUri = Uri.parse(canvasItemData.url.ifEmpty { videoUriString }),
-                                    outputFilePath = filePath.value,
-                                    thumbnailPath = "$path.jpg",
+                                    resolution = "4k",
+                                    fileUriString = fileUriString,
+                                    videoUrl = if (videoUriString.isEmpty() || videoUriString == context.getString(
+                                            R.string.empty
+                                        )
+                                    ) canvasItemData.url else videoUriString,
                                     showSavedMediumBottomSheet = showSavedMediumBottomSheet,
                                     showExportingMediumBottomSheet = showExportingMediumBottomSheet,
                                     scope = scope,
@@ -494,10 +436,32 @@ fun MediaSplicedScreen(
                                     source = source,
                                     loaderDescription = loaderDescription,
                                     canvasItemData = canvasItemData,
-                                    thumbnailBitmap = thumbnailBitmap.value,
                                     homeViewModel = homeViewModel
                                 )
+                            } else {
+                                navController.navigate("ManageSubscriptionScreen")
                             }
+                        } else {
+                            export(
+                                context = context,
+                                resolution = "720p",
+                                fileUriString = fileUriString,
+                                videoUrl = if (videoUriString.isEmpty() || videoUriString == context.getString(
+                                        R.string.empty
+                                    )
+                                ) canvasItemData.url else videoUriString,
+                                showSavedMediumBottomSheet = showSavedMediumBottomSheet,
+                                showExportingMediumBottomSheet = showExportingMediumBottomSheet,
+                                scope = scope,
+                                snackBarMessage = snackBarMessage,
+                                snackBarIsError = snackBarIsError,
+                                snackBarHostState = snackBarHostState,
+                                snackBarMessageResource = snackBarMessageResource,
+                                source = source,
+                                loaderDescription = loaderDescription,
+                                canvasItemData = canvasItemData,
+                                homeViewModel = homeViewModel
+                            )
                         }
                     }
                 }
@@ -517,9 +481,8 @@ fun MediaSplicedScreen(
 fun export(
     context: Context,
     resolution: String,
-    inputUri: Uri,
-    outputFilePath: String,
-    thumbnailPath: String,
+    fileUriString: MutableState<String>,
+    videoUrl: String,
     showSavedMediumBottomSheet: MutableState<Boolean>,
     showExportingMediumBottomSheet: MutableState<Boolean>,
     scope: CoroutineScope,
@@ -530,39 +493,46 @@ fun export(
     source: String,
     loaderDescription: MutableIntState,
     canvasItemData: CanvasItemData,
-    homeViewModel: HomeViewModel,
-    thumbnailBitmap: Bitmap?
+    homeViewModel: HomeViewModel
 ) {
     loaderDescription.intValue =
         R.string.saving_your_medium_to_your_device_thank_you_for_your_patience
     showExportingMediumBottomSheet.value = true
-    exportVideo(context = context,
-        source = source,
-        inputUri = inputUri,
-        outputFilePath = outputFilePath,
-        thumbnailPath = thumbnailPath,
+    exportVideo(
+        context = context,
+        fileUriString = fileUriString,
+        videoUrl = videoUrl,
         resolution = resolution,
+        source = source,
         loaderDescription = loaderDescription,
-        canvasItemData = canvasItemData,
-        thumbnailBitmap = thumbnailBitmap,
-        onCompletion = { success, errorMessageResource ->
-            showExportingMediumBottomSheet.value = false
-            if (success) {
-                homeViewModel.addItem(item = canvasItemData)
-                showSavedMediumBottomSheet.value = true
-            } else {
-                if (errorMessageResource != null) {
-                    snackBarIsError.value = true
-                    snackBarMessageResource.intValue = errorMessageResource
-                    snackBarMessage.value = ""
-                    scope.launch {
-                        snackBarHostState.showSnackbar(
-                            ""
-                        )
-                    }
+        canvasItemData = canvasItemData
+    ) { success, errorMessageResource, errorMessage ->
+        showExportingMediumBottomSheet.value = false
+        if (success) {
+            //homeViewModel.addItem(item = canvasItemData)
+            showSavedMediumBottomSheet.value = true
+        } else {
+            if (errorMessageResource != null) {
+                snackBarIsError.value = true
+                snackBarMessageResource.intValue = errorMessageResource
+                snackBarMessage.value = ""
+                scope.launch {
+                    snackBarHostState.showSnackbar(
+                        ""
+                    )
+                }
+            } else if (errorMessage != null) {
+                snackBarIsError.value = true
+                snackBarMessageResource.intValue = 0
+                snackBarMessage.value = errorMessage
+                scope.launch {
+                    snackBarHostState.showSnackbar(
+                        ""
+                    )
                 }
             }
-        })
+        }
+    }
 }
 
 @Composable
