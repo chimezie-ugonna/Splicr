@@ -13,13 +13,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -71,10 +70,7 @@ fun ChooseUploadFormatScreen(
 ) {
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
-            color = MaterialTheme.colorScheme.background
+            modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
         ) {
             Box(
                 modifier = Modifier
@@ -104,11 +100,13 @@ fun ChooseUploadFormatScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .statusBarsPadding()
                         .padding(
-                            top = 72.dp, bottom = dimensionResource(
+                            vertical = dimensionResource(
                                 id = R.dimen.spacingXl
                             )
                         )
+                        .navigationBarsPadding()
                 ) {
                     CustomTopNavigationBar(modifier = Modifier.fillMaxWidth(),
                         startImageResource = R.drawable.back,
@@ -227,19 +225,19 @@ fun ChooseUploadFormatScreen(
                         }
                     }
 
-                    val videoPickerLauncher = rememberLauncherForActivityResult(
-                        contract = ActivityResultContracts.PickVisualMedia(),
-                        onResult = { uri ->
-                            if (uri != null) {
-                                navController.navigate(
-                                    "PromptScreen/${selectedUploadFormat.intValue}/${
-                                        Uri.encode(
-                                            uri.toString()
-                                        )
-                                    }"
-                                )
-                            }
-                        })
+                    val videoPickerLauncher =
+                        rememberLauncherForActivityResult(contract = ActivityResultContracts.PickVisualMedia(),
+                            onResult = { uri ->
+                                if (uri != null) {
+                                    navController.navigate(
+                                        "PromptScreen/${selectedUploadFormat.intValue}/${
+                                            Uri.encode(
+                                                uri.toString()
+                                            )
+                                        }"
+                                    )
+                                }
+                            })
 
                     PrimaryButton(
                         modifier = Modifier.padding(

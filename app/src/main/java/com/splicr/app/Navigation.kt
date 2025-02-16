@@ -20,7 +20,6 @@ import com.google.gson.Gson
 import com.splicr.app.data.CanvasItemData
 import com.splicr.app.ui.screens.ChooseUploadFormatScreen
 import com.splicr.app.ui.screens.FeedbackSentScreen
-import com.splicr.app.ui.screens.FullScreenMediaPlayerScreen
 import com.splicr.app.ui.screens.HomeScreen
 import com.splicr.app.ui.screens.ManageSubscriptionScreen
 import com.splicr.app.ui.screens.MediaPlayerScreen
@@ -98,6 +97,7 @@ fun Navigation(
             BackHandler(enabled = true) {
                 (context as Activity).moveTaskToBack(true)
             }
+            ScreenOrientationUtil.SetScreenOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
             HomeScreen(
                 isDarkTheme = isDarkTheme,
                 navController = navController,
@@ -154,6 +154,7 @@ fun Navigation(
             val uploadFormatStringResource =
                 it.arguments?.getInt("uploadFormatStringResource") ?: -1
             val videoUriString = it.arguments?.getString("videoUriString") ?: ""
+            ScreenOrientationUtil.SetScreenOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
             PromptScreen(
                 isDarkTheme = isDarkTheme,
                 navController = navController,
@@ -176,108 +177,53 @@ fun Navigation(
             )
             val videoUriString = it.arguments?.getString("videoUriString") ?: ""
             val showDone = it.arguments?.getBoolean("showDone") != false
+
             MediaPlayerScreen(
                 isDarkTheme = isDarkTheme,
                 navController = navController,
                 canvasItemData = canvasItemData,
+                mediaPlayerViewModel = viewModel(),
                 videoUriString = videoUriString,
                 showDone = showDone
             )
         }
         composable(
-            route = "FullScreenMediaPlayerScreen/{videoUriString}/{currentPosition}/{isPlaying}/{duration}",
-            arguments = listOf(navArgument("videoUriString") { type = NavType.StringType },
-                navArgument("currentPosition") { type = NavType.LongType },
-                navArgument("isPlaying") { type = NavType.BoolType },
-                navArgument("duration") { type = NavType.LongType })
-        ) {
-            ScreenOrientationUtil.SetScreenOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
-            val videoUriString = it.arguments?.getString("videoUriString") ?: ""
-            val currentPosition = it.arguments?.getLong("currentPosition") ?: 0
-            val isPlaying = it.arguments?.getBoolean("isPlaying") == true
-            val duration = it.arguments?.getLong("duration") ?: 0
-
-            BackHandler(enabled = true) {
-                (context as Activity).moveTaskToBack(true)
-            }
-
-            FullScreenMediaPlayerScreen(
-                isDarkTheme = isDarkTheme,
-                navController = navController,
-                videoUriString = videoUriString,
-                currentPosition = currentPosition,
-                isPlaying = isPlaying,
-                duration = duration
-            )
-        }
-        composable(
-            route = "NameYourProjectScreen/{canvasItemDataJson}/{videoUriString}/{source}/{currentPosition}/{isPlaying}",
+            route = "NameYourProjectScreen/{canvasItemDataJson}/{videoUriString}",
             arguments = listOf(navArgument("canvasItemDataJson") {
                 type = NavType.StringType
             },
                 navArgument("videoUriString") {
                     type = NavType.StringType
-                },
-                navArgument("source") { type = NavType.StringType },
-                navArgument("currentPosition") { type = NavType.LongType },
-                navArgument("isPlaying") { type = NavType.BoolType })
+                })
         ) {
             val canvasItemData = Gson().fromJson(
                 it.arguments?.getString("canvasItemDataJson"), CanvasItemData::class.java
             )
             val videoUriString = it.arguments?.getString("videoUriString") ?: ""
-            val currentPosition = it.arguments?.getLong("currentPosition") ?: 0
-            val isPlaying = it.arguments?.getBoolean("isPlaying") == true
-
-            BackHandler(enabled = true) {
-                navController.previousBackStackEntry?.savedStateHandle?.set(
-                    "currentPosition", currentPosition
-                )
-                navController.previousBackStackEntry?.savedStateHandle?.set(
-                    "isPlaying", isPlaying
-                )
-                navController.popBackStack()
-            }
 
             NameYourProjectScreen(
                 isDarkTheme = isDarkTheme,
                 navController = navController,
                 canvasItemData = canvasItemData,
                 videoUriString = videoUriString,
-                currentPosition = currentPosition,
-                isPlaying = isPlaying,
                 nameYourProjectViewModel = viewModel()
             )
         }
         composable(
-            route = "MediaSplicedScreen/{canvasItemDataJson}/{videoUriString}/{source}/{currentPosition}/{isPlaying}",
+            route = "MediaSplicedScreen/{canvasItemDataJson}/{videoUriString}/{source}",
             arguments = listOf(navArgument("canvasItemDataJson") {
                 type = NavType.StringType
             },
                 navArgument("videoUriString") {
                     type = NavType.StringType
                 },
-                navArgument("source") { type = NavType.StringType },
-                navArgument("currentPosition") { type = NavType.LongType },
-                navArgument("isPlaying") { type = NavType.BoolType })
+                navArgument("source") { type = NavType.StringType })
         ) {
             val canvasItemData = Gson().fromJson(
                 it.arguments?.getString("canvasItemDataJson"), CanvasItemData::class.java
             )
             val videoUriString = it.arguments?.getString("videoUriString") ?: ""
             val source = it.arguments?.getString("source") ?: ""
-            val currentPosition = it.arguments?.getLong("currentPosition") ?: 0
-            val isPlaying = it.arguments?.getBoolean("isPlaying") == true
-
-            BackHandler(enabled = true) {
-                navController.previousBackStackEntry?.savedStateHandle?.set(
-                    "currentPosition", currentPosition
-                )
-                navController.previousBackStackEntry?.savedStateHandle?.set(
-                    "isPlaying", isPlaying
-                )
-                navController.popBackStack()
-            }
 
             MediaSplicedScreen(
                 isDarkTheme = isDarkTheme,
@@ -285,8 +231,6 @@ fun Navigation(
                 canvasItemData = canvasItemData,
                 videoUriString = videoUriString,
                 source = source,
-                currentPosition = currentPosition,
-                isPlaying = isPlaying,
                 subscriptionViewModel = subscriptionViewModel,
                 homeViewModel = homeViewModel
             )

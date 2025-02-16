@@ -6,22 +6,23 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
-import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.OpenableColumns
-import android.util.Log
+import android.util.Base64
 import androidx.compose.runtime.MutableIntState
-import androidx.core.content.FileProvider
+import androidx.compose.runtime.MutableState
 import androidx.core.net.toUri
-import com.arthenica.ffmpegkit.FFmpegKit
+import com.cloudinary.Transformation
+import com.cloudinary.android.MediaManager
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
+import com.splicr.app.BuildConfig
 import com.splicr.app.R
 import com.splicr.app.data.CanvasItemData
 import com.splicr.app.data.MediaMetadataData
@@ -31,16 +32,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayOutputStream
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
-import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
-import kotlin.coroutines.cancellation.CancellationException
 
 object MediaConfigurationUtil {
 
@@ -108,23 +108,30 @@ object MediaConfigurationUtil {
         val mb = kb / 1024.0
         val gb = mb / 1024.0
         val tb = gb / 1024.0
+
         return when {
-            tb >= 1 -> String.format(Locale.getDefault(), "%.2fTB", tb)
-            gb >= 1 -> String.format(Locale.getDefault(), "%.2fGB", gb)
-            mb >= 1 -> String.format(Locale.getDefault(), "%.2fMB", mb)
-            kb >= 1 -> String.format(Locale.getDefault(), "%.2fKB", kb)
-            else -> String.format(Locale.getDefault(), "%dB", bytes)
+            tb >= 1 -> formatSize(tb, "TB")
+            gb >= 1 -> formatSize(gb, "GB")
+            mb >= 1 -> formatSize(mb, "MB")
+            kb >= 1 -> formatSize(kb, "KB")
+            else -> "$bytes B"
+        }
+    }
+
+    private fun formatSize(value: Double, unit: String): String {
+        return if (value % 1 == 0.0) {
+            String.format(Locale.getDefault(), "%.0f %s", value, unit)
+        } else {
+            String.format(Locale.getDefault(), "%.2f %s", value, unit)
         }
     }
 
     private fun getFileSize(context: Context, videoUri: Uri): Long? {
         return try {
             if (videoUri.scheme == "file") {
-                // Use File API for file:// URIs
                 val file = File(videoUri.path!!)
                 file.length()
             } else {
-                // Use ContentResolver for content:// URIs
                 var cursor: Cursor? = null
                 try {
                     cursor = context.contentResolver.query(videoUri, null, null, null, null)
@@ -163,41 +170,6 @@ object MediaConfigurationUtil {
         }
     }
 
-    suspend fun downloadVideoToLocal(context: Context, videoUrl: String): Result<Uri?> {
-        return withContext(Dispatchers.IO) {
-            val fileName = "temp_download_video.mp4"
-            val file = File(context.cacheDir, fileName)
-
-            try {
-                val url = URL(videoUrl)
-                val connection = url.openConnection() as HttpURLConnection
-                connection.connect()
-
-                val outputStream = FileOutputStream(file)
-                val inputStream = connection.inputStream
-
-                inputStream.use { input ->
-                    outputStream.use { output ->
-                        val buffer = ByteArray(1024)
-                        var bytesRead: Int
-                        while (input.read(buffer).also { bytesRead = it } != -1) {
-                            output.write(buffer, 0, bytesRead)
-                        }
-                    }
-                }
-
-                connection.disconnect()
-                Result.success(Uri.fromFile(file))
-            } catch (e: Exception) {
-                e.printStackTrace()
-                if (file.exists()) {
-                    file.delete()
-                }
-                Result.failure(e)
-            }
-        }
-    }
-
     fun formatDuration(durationMillis: Long, shouldBeInFullFormat: Boolean = true): String {
         val totalSeconds = durationMillis / 1000
         val hours = totalSeconds / 3600
@@ -210,6 +182,14 @@ object MediaConfigurationUtil {
         } else {
             String.format(Locale.getDefault(), "%2d:%02d", minutes, seconds)
         }
+    }
+
+    private fun timeToSeconds(time: String): Int {
+        val parts = time.split(":")
+        val hours = parts[0].toIntOrNull() ?: 0
+        val minutes = parts[1].toIntOrNull() ?: 0
+        val seconds = parts[2].toIntOrNull() ?: 0
+        return (hours * 3600) + (minutes * 60) + seconds
     }
 
     fun formatTimestamp(timestamp: Any): String {
@@ -232,212 +212,322 @@ object MediaConfigurationUtil {
 
     fun exportVideo(
         context: Context,
-        inputUri: Uri,
-        outputFilePath: String,
-        thumbnailPath: String,
+        fileUriString: MutableState<String>,
+        videoUrl: String,
         resolution: String,
         source: String,
         loaderDescription: MutableIntState,
         canvasItemData: CanvasItemData,
-        thumbnailBitmap: Bitmap?,
-        onCompletion: (success: Boolean, errorMessageResource: Int?) -> Unit
+        onCompletion: (Boolean, Int?, String?) -> Unit
     ) {
-        when (inputUri.scheme) {
-            "file" -> {
-                processVideo(
-                    context = context,
-                    inputFile = File(inputUri.path!!),
-                    outputFilePath = outputFilePath,
-                    thumbnailPath = thumbnailPath,
-                    resolution = resolution,
-                    source = source,
-                    loaderDescription = loaderDescription,
-                    canvasItemData = canvasItemData,
-                    thumbnailBitmap = thumbnailBitmap,
-                    onCompletion = onCompletion
+        if (videoUrl.contains("firebasestorage.googleapis.com")) {
+            val tempFile = File(context.cacheDir, "temp_url_video.mp4")
+            if (tempFile.exists()) {
+                uploadToCloudinary(tempFile, resolution) { cloudinaryUrl ->
+                    if (cloudinaryUrl != null) {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            downloadSaveAndUploadVideo(
+                                context,
+                                fileUriString,
+                                cloudinaryUrl,
+                                source,
+                                loaderDescription,
+                                canvasItemData,
+                                onCompletion
+                            )
+                        }
+                    } else {
+                        onCompletion(false, R.string.an_error_occurred_while_processing_video, null)
+                    }
+                }
+            } else {
+                val storageReference = Firebase.storage.getReferenceFromUrl(videoUrl)
+                storageReference.getFile(tempFile.toUri()).addOnSuccessListener {
+                    uploadToCloudinary(tempFile, resolution) { cloudinaryUrl ->
+                        if (cloudinaryUrl != null) {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                downloadSaveAndUploadVideo(
+                                    context,
+                                    fileUriString,
+                                    cloudinaryUrl,
+                                    source,
+                                    loaderDescription,
+                                    canvasItemData,
+                                    onCompletion
+                                )
+                            }
+                        } else {
+                            onCompletion(
+                                false, R.string.an_error_occurred_while_processing_video, null
+                            )
+                        }
+                    }
+                }.addOnFailureListener {
+                    onCompletion(false, null, it.localizedMessage)
+                }
+
+            }
+        } else if (videoUrl.contains("res.cloudinary.com")) {
+            CoroutineScope(Dispatchers.IO).launch {
+                downloadSaveAndUploadVideo(
+                    context, fileUriString, MediaManager.get().url().transformation(
+                        Transformation<Transformation<*>>().width(if (resolution == "4k") 3840 else 1280)
+                            .height(if (resolution == "4k") 2160 else 720).crop("fill").chain()
+                            .flags("keep_dar")
+                    ).generate(videoUrl), source, loaderDescription, canvasItemData, onCompletion
                 )
             }
 
-            "http", "https" -> {
-                val tempFile = File(context.cacheDir, "temp_url_video.mp4")
-                if (tempFile.exists()) {
-                    processVideo(
-                        context = context,
-                        inputFile = tempFile,
-                        outputFilePath = outputFilePath,
-                        thumbnailPath = thumbnailPath,
-                        resolution = resolution,
-                        source = source,
-                        loaderDescription = loaderDescription,
-                        canvasItemData = canvasItemData,
-                        thumbnailBitmap = thumbnailBitmap,
-                        onCompletion = onCompletion
-                    )
-                } else {
-                    val storageReference = Firebase.storage.getReferenceFromUrl(inputUri.toString())
-                    storageReference.getFile(tempFile.toUri()).addOnSuccessListener {
-                        processVideo(
-                            context = context,
-                            inputFile = tempFile,
-                            outputFilePath = outputFilePath,
-                            thumbnailPath = thumbnailPath,
-                            resolution = resolution,
-                            source = source,
-                            loaderDescription = loaderDescription,
-                            canvasItemData = canvasItemData,
-                            thumbnailBitmap = thumbnailBitmap,
-                            onCompletion = onCompletion
-                        )
-                    }.addOnFailureListener { _ ->
-                        if (tempFile.exists()) {
-                            tempFile.delete()
-                        }
-                        onCompletion(
-                            false, R.string.an_error_occurred_while_downloading_video
-                        )
-                    }
-                }
-            }
+        } else {
+            onCompletion(false, R.string.an_error_occurred_please_attempt_the_process_again, null)
+        }
+    }
 
-            else -> {
-                onCompletion(false, R.string.an_error_occurred_please_attempt_the_process_again)
+    fun uploadToCloudinary(videoFile: File, resolution: String, onComplete: (String?) -> Unit) {
+        val options = HashMap<String, Any>()
+        options.put("resource_type", "video")
+        options.put("public_id", "temp_video/${getUserId()}")
+        options.put(
+            "transformation",
+            Transformation<Transformation<*>>().width(if (resolution == "4k") 3840 else 1280)
+                .height(if (resolution == "4k") 2160 else 720).crop("fill").chain()
+                .flags("keep_dar")
+        )
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val result = MediaManager.get().cloudinary.uploader()
+                    .uploadLarge(videoFile.absolutePath, options, 6000000)
+
+                val cloudinaryUrl = result?.get("secure_url") as? String
+                onComplete(cloudinaryUrl)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onComplete(null)
             }
         }
     }
 
-    private fun processVideo(
+    fun downloadSaveAndUploadVideo(
         context: Context,
-        inputFile: File,
-        outputFilePath: String,
-        thumbnailPath: String,
-        resolution: String,
+        fileUriString: MutableState<String>,
+        videoUrl: String,
         source: String,
         loaderDescription: MutableIntState,
         canvasItemData: CanvasItemData,
-        thumbnailBitmap: Bitmap?,
-        onCompletion: (success: Boolean, errorMessageResource: Int?) -> Unit
+        onCompletion: (success: Boolean, errorMessageResource: Int?, errorMessage: String?) -> Unit
     ) {
-        val scale = if (resolution == "4k") "3840:2160" else "1280:720"
-
-        FFmpegKit.executeAsync("-i ${inputFile.absolutePath} -vf scale=$scale -c:v mpeg4 -preset slow -crf 22 -c:a copy $outputFilePath") { session ->
-            if (session.returnCode.isValueSuccess) {
-                val savedToDevice = saveVideoToDevice(context, outputFilePath)
-                if (savedToDevice) {
+        CoroutineScope(context = Dispatchers.IO).launch {
+            downloadAndSaveVideoToDevice(context, videoUrl) { uri, fileName ->
+                if (uri != null) {
+                    fileUriString.value = uri.toString()
                     if (source != "HomeScreen" && Firebase.auth.currentUser != null) {
                         loaderDescription.intValue =
                             R.string.saving_your_medium_to_your_account_thank_you_for_your_patience
                         uploadToFirebaseStorage(
-                            videoPath = outputFilePath,
-                            thumbnailPath = thumbnailPath,
-                            thumbnailBitmap = thumbnailBitmap
+                            context, uri, fileName.toString(), canvasItemData.thumbnailUrl
                         ) { videoUrl, thumbnailUrl ->
                             if (videoUrl != null && thumbnailUrl != null) {
-                                canvasItemData.id = UUID.randomUUID().toString() + SimpleDateFormat(
-                                    "_yyyyMMdd_HHmmss", Locale.ENGLISH
-                                ).format(
-                                    Date()
-                                )
+                                canvasItemData.id = "${Firebase.auth.currentUser?.uid}_${
+                                    fileName?.replace(
+                                        if (fileName.contains(".mp4")) ".mp4" else ".jpg", ""
+                                    )
+                                }"
                                 canvasItemData.url = videoUrl
                                 canvasItemData.thumbnailUrl = thumbnailUrl
                                 canvasItemData.size = getAllVideoMetadata(
-                                    context = context, videoUri = Uri.fromFile(File(outputFilePath))
+                                    context, uri
                                 )?.fileSize ?: 0
+                                canvasItemData.duration = getAllVideoMetadata(
+                                    context, uri
+                                )?.duration ?: 0
 
                                 Firebase.firestore.collection("media").document(canvasItemData.id)
                                     .set(canvasItemData).addOnSuccessListener {
-                                        triggerInAppReviewAutomatically(context = context)
-                                        onCompletion(true, null)
-                                    }.addOnFailureListener { e ->
-                                        e.printStackTrace()
+                                        triggerInAppReviewAutomatically(context)
+                                        onCompletion(true, null, null)
+                                    }.addOnFailureListener {
                                         onCompletion(
-                                            false,
-                                            R.string.an_error_occurred_while_saving_to_your_account
+                                            false, null, it.localizedMessage
                                         )
                                     }
-                            } else if (videoUrl == null) {
-                                onCompletion(
-                                    false,
-                                    R.string.an_error_occurred_while_saving_to_your_account_failed_to_upload_video
-                                )
                             } else {
                                 onCompletion(
                                     false,
-                                    R.string.an_error_occurred_while_saving_to_your_account_failed_to_upload_thumbnail
+                                    if (videoUrl == null) R.string.an_error_occurred_while_saving_to_your_account_failed_to_upload_video else R.string.an_error_occurred_while_saving_to_your_account_failed_to_upload_thumbnail,
+                                    null
                                 )
                             }
-
                         }
                     } else {
-                        triggerInAppReviewAutomatically(context = context)
-                        onCompletion(true, null)
+                        canvasItemData.size = getAllVideoMetadata(
+                            context, uri
+                        )?.fileSize ?: 0
+                        triggerInAppReviewAutomatically(context)
+                        onCompletion(true, null, null)
                     }
                 } else {
                     onCompletion(
-                        false, R.string.an_error_occurred_while_saving_to_your_device
+                        false, R.string.an_error_occurred_while_saving_to_your_device, null
                     )
                 }
-            } else {
-                onCompletion(
-                    false, R.string.an_error_occurred_while_saving_to_your_device
+            }
+        }
+    }
+
+    suspend fun downloadAndSaveVideoToDevice(
+        context: Context, videoUrl: String, onSuccess: (Uri?, String?) -> Unit
+    ) {
+        return withContext(Dispatchers.IO) {
+            val fileName = "${
+                SimpleDateFormat(
+                    "yyyyMMdd_HHmmss", Locale.getDefault()
+                ).format(
+                    Date()
                 )
+            }.mp4"
+
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
+                put(
+                    MediaStore.MediaColumns.RELATIVE_PATH,
+                    Environment.DIRECTORY_DCIM + "/" + context.getString(R.string.in_app_name)
+                )
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+
+            val contentResolver = context.contentResolver
+            val uri: Uri? =
+                contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+            try {
+                uri?.let { videoUri ->
+                    contentResolver.openOutputStream(videoUri).use { outputStream ->
+                        URL(videoUrl).openStream().use { inputStream ->
+                            inputStream.copyTo(outputStream!!)
+                        }
+                    }
+
+                    contentValues.clear()
+                    contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                    contentResolver.update(videoUri, contentValues, null, null)
+
+                    onSuccess(videoUri, fileName)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                uri?.let {
+                    contentResolver.delete(
+                        it, null, null
+                    )
+                }
+                onSuccess(null, null)
             }
         }
     }
 
     private fun uploadToFirebaseStorage(
-        videoPath: String,
-        thumbnailPath: String,
-        thumbnailBitmap: Bitmap?,
+        context: Context,
+        videoUri: Uri,
+        fileName: String,
+        thumbnailUrl: String?,
         onCompletion: (String?, String?) -> Unit
     ) {
         val firebaseStorage = Firebase.storage
         val videoRef = firebaseStorage.reference.child(
             "videos/${Firebase.auth.currentUser?.uid}_${
-                File(videoPath).name
+                fileName
             }"
         )
         val thumbnailRef = firebaseStorage.reference.child(
             "thumbnails/${Firebase.auth.currentUser?.uid}_${
-                File(thumbnailPath).name
+                fileName.replace(".mp4", ".jpg")
             }"
         )
 
-        videoRef.putFile(Uri.fromFile(File(videoPath))).addOnSuccessListener {
+        videoRef.putFile(videoUri).addOnSuccessListener {
             videoRef.downloadUrl.addOnSuccessListener { videoUrl ->
-                if (thumbnailBitmap != null) {
-                    thumbnailRef.putBytes(bitmapToByteArray(thumbnailBitmap)).addOnSuccessListener {
-                        thumbnailRef.downloadUrl.addOnSuccessListener { thumbnailUrl ->
-                            onCompletion(videoUrl.toString(), thumbnailUrl.toString())
-                        }.addOnFailureListener { e ->
-                            e.printStackTrace()
+                if (!thumbnailUrl.isNullOrEmpty()) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        downloadMediaToLocal(
+                            context, thumbnailUrl, "temp_download_thumbnail.jpg"
+                        ).onSuccess { thumbnailUri ->
+                            if (thumbnailUri != null) {
+                                thumbnailRef.putFile(thumbnailUri).addOnSuccessListener {
+                                    thumbnailRef.downloadUrl.addOnSuccessListener { thumbnailUrl ->
+                                        File(thumbnailUri.path!!).delete()
+                                        onCompletion(videoUrl.toString(), thumbnailUrl.toString())
+                                    }.addOnFailureListener { e ->
+                                        e.printStackTrace()
+                                        onCompletion(videoUrl.toString(), null)
+                                    }
+                                }.addOnFailureListener {
+                                    it.printStackTrace()
+                                    onCompletion(videoUrl.toString(), null)
+                                }
+                            } else {
+                                onCompletion(videoUrl.toString(), null)
+                            }
+                        }.onFailure {
+                            it.printStackTrace()
                             onCompletion(videoUrl.toString(), null)
                         }
-                    }.addOnFailureListener { e ->
-                        e.printStackTrace()
-                        onCompletion(videoUrl.toString(), null)
                     }
                 } else {
                     onCompletion(videoUrl.toString(), null)
                 }
-            }.addOnFailureListener { _ ->
+            }.addOnFailureListener {
+                it.printStackTrace()
                 onCompletion(null, null)
             }
-        }.addOnFailureListener { _ ->
+        }.addOnFailureListener {
+            it.printStackTrace()
             onCompletion(null, null)
+        }
+    }
+
+    suspend fun downloadMediaToLocal(
+        context: Context, mediaUrl: String, fileName: String = "temp_download_video.mp4"
+    ): Result<Uri?> {
+        return withContext(Dispatchers.IO) {
+            val file = File(context.cacheDir, fileName)
+
+            try {
+                val url = URL(mediaUrl)
+                val connection = url.openConnection() as HttpURLConnection
+                connection.connect()
+
+                file.outputStream().use { outputStream ->
+                    connection.inputStream.use { inputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                connection.disconnect()
+
+                if (file.length() == 0L) {
+                    file.delete()
+                    return@withContext Result.failure(Exception(context.getString(R.string.downloaded_file_is_empty)))
+                }
+
+                Result.success(Uri.fromFile(file))
+            } catch (e: Exception) {
+                e.printStackTrace()
+                if (file.exists()) {
+                    file.delete()
+                }
+                Result.failure(e)
+            }
         }
     }
 
     fun shareVideo(
         context: Context,
-        videoPath: String,
+        videoUri: Uri,
         packageName: String?,
         fallbackPackageName: String?,
         onResult: (Boolean, Int?) -> Unit
     ) {
-        val videoFile = File(videoPath)
-        val videoUri =
-            FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", videoFile)
-
         packageName?.let {
             if (isPackageInstalled(context, it)) {
                 startSharingIntent(context, videoUri, it, onResult)
@@ -482,206 +572,144 @@ object MediaConfigurationUtil {
         }
     }
 
-    private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
-        val stream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
-        return stream.toByteArray()
-    }
+    fun getUserId(): String {
+        val user = Firebase.auth.currentUser
+        return if (user != null) {
+            user.uid
+        } else {
+            when {
+                SharedPreferenceUtil.guestUserId() != null -> {
+                    SharedPreferenceUtil.guestUserId().toString()
+                }
 
-    private fun saveVideoToDevice(context: Context, filePath: String): Boolean {
-        val file = File(filePath)
-        val folderName = context.getString(R.string.in_app_name)
-        val directoryPath =
-            "${Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES)}/${folderName}"
-        val directory = File(directoryPath)
+                SharedPreferenceUtil.guestUserId() == null -> {
+                    SharedPreferenceUtil.guestUserId(UUID.randomUUID().toString()).toString()
+                }
 
-        // Check and create directory if necessary
-        if (!directory.exists()) {
-            val created = directory.mkdirs()
-            if (!created) {
-                return false
+                else -> {
+                    ""
+                }
             }
         }
+    }
 
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, file.name)
-            put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
-            put(
-                MediaStore.MediaColumns.RELATIVE_PATH,
-                "${Environment.DIRECTORY_MOVIES}/${folderName}"
-            )
-        }
-
-        return try {
-            val uri: Uri? = context.contentResolver.insert(
-                MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues
-            )
-            uri?.let {
-                context.contentResolver.openOutputStream(it).use { outputStream ->
-                    File(filePath).inputStream().use { inputStream ->
-                        inputStream.copyTo(outputStream!!)
+    fun getFilePathFromUri(context: Context, uri: Uri): String? {
+        return when (uri.scheme) {
+            "file" -> uri.path
+            "content" -> {
+                var filePath: String? = null
+                val cursor = context.contentResolver.query(uri, null, null, null, null)
+                cursor?.use {
+                    if (it.moveToFirst()) {
+                        val columnIndex = it.getColumnIndex("_data")
+                        if (columnIndex != -1) {
+                            filePath = it.getString(columnIndex)
+                        }
                     }
                 }
-                true
-            } ?: false
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-    }
-
-    private fun getCustomDirectory(context: Context): File {
-        val directory = File(
-            context.getExternalFilesDir(Environment.DIRECTORY_MOVIES), context.getString(
-                R.string.in_app_name
-            )
-        )
-        if (!directory.exists()) {
-            directory.mkdirs()
-        }
-        return directory
-    }
-
-    fun getOutputFilePath(context: Context, filename: String): String {
-        val customDirectory = getCustomDirectory(context)
-        return File(customDirectory, filename).absolutePath
-    }
-
-    private fun convertContentUriToFile(context: Context, uri: Uri): File? {
-        return try {
-            val file = File(context.cacheDir, "temp_uri_video.mp4")
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                FileOutputStream(file).use { outputStream ->
-                    inputStream.copyTo(outputStream)
-                }
+                filePath
             }
-            file
-        } catch (_: Exception) {
-            null
+
+            else -> null
         }
     }
 
-    fun processVideo(
+    fun uploadVideoAndWaitForPreview(
+        context: Context,
         uri: Uri,
         trimRanges: List<TrimRangeData>,
-        context: Context,
-        aspectRatioWidth: Int,
-        aspectRatioHeight: Int,
-        scope: CoroutineScope,
-        onCompletion: (Uri?) -> Unit
+        aspectRatio: String,
+        onPreviewReady: (String?, String?) -> Unit
     ) {
-        scope.launch(Dispatchers.IO) {
-            val result =
-                processVideoInternal(uri, trimRanges, context, aspectRatioWidth, aspectRatioHeight)
-            withContext(Dispatchers.Main) {
-                onCompletion(result)
-            }
-        }.invokeOnCompletion {
-            if (it is CancellationException) {
-                onCompletion(Uri.EMPTY)
-            }
-        }
-    }
+        val options = HashMap<String, Any>()
+        options.put("resource_type", "video")
+        options.put("public_id", "temp_video/${getUserId()}")
 
-    private fun processVideoInternal(
-        uri: Uri,
-        trimRanges: List<TrimRangeData>,
-        context: Context,
-        aspectRatioWidth: Int,
-        aspectRatioHeight: Int
-    ): Uri? {
-        val videoFile = convertContentUriToFile(context, uri) ?: return null
-        val tempDirectory = context.cacheDir
-        val tempFileForMerge = File(tempDirectory, "merged_output.mp4").absolutePath
-        val tempFileVideoPath = File(tempDirectory, "temp_file_video.mp4").absolutePath
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val result = MediaManager.get().cloudinary.uploader()
+                    .uploadLarge(getFilePathFromUri(context, uri), options, 6000000)
 
-        return when {
-            trimRanges.size == 1 -> {
-                // Single range case: trim and adjust resolution
-                val range = trimRanges.first()
-                val tempFilePath = File(tempDirectory, "segment_1.mp4").absolutePath
-                val trimCommand =
-                    "-y -i ${videoFile.absolutePath} -ss ${range.startTime} -to ${range.endTime} -c:v mpeg4 -crf 18 -preset slower -c:a copy $tempFilePath"
+                val publicId = result?.get("public_id").toString()
 
-                val trimSession = FFmpegKit.execute(trimCommand)
-                if (trimSession.returnCode.isValueSuccess) {
-                    adjustAspectRatio(
-                        tempFilePath, tempFileVideoPath, aspectRatioWidth, aspectRatioHeight
-                    )
-                } else {
-                    Log.d("FFmpegError trimSession", "FFmpeg output: ${trimSession.output}")
-                    null
-                }
-            }
+                val videoTransformation = Transformation<Transformation<*>>()
+                val thumbnailTransformation = Transformation<Transformation<*>>()
 
-            else -> {
-                // Multiple ranges case: trim, merge, and adjust resolution
-                val tempFilePaths = mutableListOf<String>()
                 trimRanges.forEachIndexed { index, range ->
-                    val tempFilePath = File(tempDirectory, "segment_${index + 1}.mp4").absolutePath
-                    val trimCommand =
-                        "-y -i ${videoFile.absolutePath} -ss ${range.startTime} -to ${range.endTime} -c:v mpeg4 -crf 18 -preset slower -c:a copy $tempFilePath"
+                    val startSeconds = timeToSeconds(range.startTime)
+                    val endSeconds = timeToSeconds(range.endTime)
 
-                    val trimSession = FFmpegKit.execute(trimCommand)
-                    if (trimSession.returnCode.isValueSuccess) {
-                        tempFilePaths.add(tempFilePath)
+                    if (index == 0) {
+                        videoTransformation.startOffset(startSeconds.toFloat())
+                            .endOffset(endSeconds.toFloat())
+
+                        thumbnailTransformation.startOffset(startSeconds.toFloat())
+                            .endOffset(endSeconds.toFloat())
                     } else {
-                        Log.d("FFmpegError trimSession", "FFmpeg output: ${trimSession.output}")
-                        return@processVideoInternal null
+                        videoTransformation.chain().flags("splice")
+                            .overlay("video:${publicId.replace("/", ":")}")
+                            .startOffset(startSeconds.toFloat()).endOffset(endSeconds.toFloat())
+                            .chain().flags("layer_apply")
+
+                        thumbnailTransformation.chain().flags("splice")
+                            .overlay("video:${publicId.replace("/", ":")}")
+                            .startOffset(startSeconds.toFloat()).endOffset(endSeconds.toFloat())
+                            .chain().flags("layer_apply")
                     }
                 }
-                if (tempFilePaths.size == trimRanges.size) {
-                    val mergeResult = mergeVideos(
-                        tempFilePaths = tempFilePaths,
-                        finalVideoPath = tempFileForMerge,
-                        context = context
-                    )
-                    if (mergeResult != null) {
-                        adjustAspectRatio(
-                            tempFileForMerge, tempFileVideoPath, aspectRatioWidth, aspectRatioHeight
-                        )
-                    } else {
-                        null
-                    }
-                } else {
-                    null
+
+                val thumbnailUrl = MediaManager.get().url().resourceType("video").transformation(
+                    thumbnailTransformation.startOffset("auto").chain().gravity("auto").chain()
+                        .quality("auto").fetchFormat("jpg")
+                ).generate(publicId)
+
+                val finalVideoUrl = MediaManager.get().url().resourceType("video").transformation(
+                    videoTransformation.chain().aspectRatio(aspectRatio).crop("fill")
+                ).generate(publicId)
+
+                withContext(Dispatchers.Main) {
+                    onPreviewReady(finalVideoUrl, thumbnailUrl)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    onPreviewReady(null, null)
                 }
             }
         }
     }
 
-    private fun adjustAspectRatio(
-        inputPath: String,
-        outputPath: String,
-        targetAspectRatioWidth: Int,
-        targetAspectRatioHeight: Int
-    ): Uri? {
-        val scaleAndPadCommand =
-            "-i $inputPath -vf \"scale='if(gt(iw/ih,$targetAspectRatioWidth/$targetAspectRatioHeight),$targetAspectRatioWidth,-1)':'if(gt(iw/ih,$targetAspectRatioWidth/$targetAspectRatioHeight),-1,$targetAspectRatioHeight)',pad=$targetAspectRatioWidth:$targetAspectRatioHeight:(ow-iw)/2:(oh-ih)/2\" -c:v mpeg4 -crf 18 -c:a copy $outputPath"
+    suspend fun fetchCloudinaryMetadata(publicId: String): Result<Long?> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val url =
+                    "https://api.cloudinary.com/v1_1/${BuildConfig.CLOUDINARY_CLOUD_NAME}/resources/video/upload/$publicId"
+                val connection = URL(url).openConnection() as HttpURLConnection
+                val auth = Base64.encodeToString(
+                    "${BuildConfig.CLOUDINARY_API_KEY}:${BuildConfig.CLOUDINARY_API_SECRET}".toByteArray(),
+                    Base64.NO_WRAP
+                )
+                connection.setRequestProperty("Authorization", "Basic $auth")
+                connection.requestMethod = "GET"
+                connection.connect()
 
-        val session = FFmpegKit.execute(scaleAndPadCommand)
+                val response = connection.inputStream.bufferedReader().use { it.readText() }
+                connection.disconnect()
 
-        return if (session.returnCode.isValueSuccess) {
-            Uri.fromFile(File(outputPath))
-        } else {
-            Log.d("FFmpegError adjustAspectRatio", "FFmpeg output: ${session.output}")
-            null
-        }
-    }
-
-    private fun mergeVideos(
-        tempFilePaths: List<String>, finalVideoPath: String, context: Context
-    ): Uri? {
-        val fileListPath = File(context.cacheDir, "filelist.txt").absolutePath
-        val fileListContent = tempFilePaths.joinToString("\n") { "file '$it'" }
-        File(fileListPath).writeText(fileListContent)
-
-        val mergeCommand = "-f concat -safe 0 -i $fileListPath -c copy $finalVideoPath"
-        val mergeSession = FFmpegKit.execute(mergeCommand)
-        return if (mergeSession.returnCode.isValueSuccess) {
-            Uri.fromFile(File(finalVideoPath))
-        } else {
-            null
+                val derivedArray = JSONObject(response).optJSONArray("derived") ?: JSONArray()
+                if (derivedArray.length() > 0 && derivedArray.getJSONObject(0)
+                        .getString("format") != "jpg"
+                ) {
+                    Result.success(
+                        derivedArray.getJSONObject(0).getLong("bytes")
+                    )
+                } else {
+                    Result.success(0L)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Result.failure(e)
+            }
         }
     }
 

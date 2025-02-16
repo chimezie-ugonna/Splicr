@@ -9,11 +9,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -81,10 +82,7 @@ fun HomeScreen(
 ) {
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
-            color = MaterialTheme.colorScheme.background
+            modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
         ) {
             val context = LocalContext.current
 
@@ -117,8 +115,9 @@ fun HomeScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .statusBarsPadding()
                         .padding(
-                            top = 72.dp
+                            top = dimensionResource(id = R.dimen.spacingXl)
                         )
                 ) {
                     CustomTopNavigationBar(modifier = Modifier.fillMaxWidth(),
@@ -288,7 +287,8 @@ fun HomeScreen(
                                                 context = context,
                                                 bottomPadding = if (index == homeViewModel.canvasItems.size - 1) if (homeViewModel.isLoadingMore) 0.dp else dimensionResource(
                                                     id = R.dimen.spacingMd
-                                                ) else 0.dp,
+                                                ) + WindowInsets.navigationBars.asPaddingValues()
+                                                    .calculateBottomPadding() else 0.dp,
                                                 navController = navController
                                             )
                                         }

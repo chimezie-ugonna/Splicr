@@ -38,13 +38,11 @@ fun AppNameText(modifier: Modifier) {
 @Composable
 fun PremiumText(modifier: Modifier) {
     Row(
-        modifier = modifier.wrapContentSize(),
-        horizontalArrangement = Arrangement.spacedBy(
+        modifier = modifier.wrapContentSize(), horizontalArrangement = Arrangement.spacedBy(
             space = dimensionResource(
                 id = R.dimen.spacingXs
             )
-        ),
-        verticalAlignment = Alignment.CenterVertically
+        ), verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
             modifier = Modifier.size(size = dimensionResource(id = R.dimen.spacingMd)),

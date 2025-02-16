@@ -46,7 +46,7 @@ fun SplicrTheme(
     isSystemInDarkTheme: Boolean = true,
     statusBarColor: Color = Color.Transparent,
     isAppearanceLightStatusBars: Boolean = false,
-    navigationBarColor: Color = brandBlack,
+    navigationBarColor: Color = Color.Transparent,
     isAppearanceLightNavigationBars: Boolean = true,
     content: @Composable () -> Unit
 ) {

@@ -54,6 +54,7 @@ fun CustomTopNavigationBar(
                 text = stringResource(id = startStringResource),
                 color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.labelSmall,
+                fontSize = MaterialTheme.typography.labelSmall.fontSize.nonScaledSp,
                 fontWeight = FontWeight.Normal
             )
         } else if (startComposable != null) {
@@ -62,11 +63,11 @@ fun CustomTopNavigationBar(
 
         if (centerStringResource != null) {
             Text(
-                modifier = Modifier
-                    .align(Alignment.Center),
+                modifier = Modifier.align(Alignment.Center),
                 text = stringResource(id = centerStringResource),
                 color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.labelLarge,
+                fontSize = MaterialTheme.typography.labelLarge.fontSize.nonScaledSp,
                 fontWeight = FontWeight.Bold
             )
         } else if (centerComposable != null) {
@@ -94,6 +95,7 @@ fun CustomTopNavigationBar(
                 text = stringResource(id = endStringResource),
                 color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.labelSmall,
+                fontSize = MaterialTheme.typography.labelSmall.fontSize.nonScaledSp,
                 fontWeight = FontWeight.Normal
             )
         } else if (endComposable != null) {

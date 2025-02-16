@@ -4,7 +4,6 @@ package com.splicr.app.ui.components
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.LinearEasing
@@ -66,6 +65,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -83,6 +83,7 @@ import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.placeholder
 import com.google.accompanist.placeholder.shimmer
@@ -91,6 +92,7 @@ import com.google.firebase.ktx.Firebase
 import com.splicr.app.R
 import com.splicr.app.data.CanvasItemData
 import com.splicr.app.data.ListItemData
+import com.splicr.app.utils.MediaConfigurationUtil.formatFileSize
 import com.splicr.app.utils.MediaConfigurationUtil.shareVideo
 import com.splicr.app.viewModel.SettingsViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -117,9 +119,8 @@ fun CustomBottomSheet(
     snackBarIsError: MutableState<Boolean> = remember {
         mutableStateOf(true)
     },
-    filePath: String? = null,
+    fileUriString: String? = null,
     canvasItemData: CanvasItemData = CanvasItemData(),
-    thumbnailBitmap: Bitmap? = null,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     viewModel: SettingsViewModel = viewModel(),
     loaderDescription: Int? = null,
@@ -186,16 +187,14 @@ fun CustomBottomSheet(
                             .clickable(interactionSource = remember {
                                 MutableInteractionSource()
                             }, indication = null) {
-                                scope
-                                    .launch { sheetState.hide() }
-                                    .invokeOnCompletion {
-                                        if (!sheetState.isVisible) {
-                                            showBottomSheet.value = false
-                                            if (hasPerformedHapticFeedback != null) {
-                                                hasPerformedHapticFeedback.value = false
-                                            }
+                                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                    if (!sheetState.isVisible) {
+                                        showBottomSheet.value = false
+                                        if (hasPerformedHapticFeedback != null) {
+                                            hasPerformedHapticFeedback.value = false
                                         }
                                     }
+                                }
                             },
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.labelSmall,
@@ -224,10 +223,7 @@ fun CustomBottomSheet(
                         .fillMaxWidth()
                         .wrapContentHeight()
                         .padding(
-                            top = if (loaderList
-                                    .contains(label)
-                                    .not()
-                            ) dimensionResource(
+                            top = if (loaderList.contains(label).not()) dimensionResource(
                                 id = R.dimen.spacingSm
                             ) else 0.dp
                         ), verticalAlignment = Alignment.CenterVertically
@@ -241,7 +237,13 @@ fun CustomBottomSheet(
                                     id = R.dimen.spacingSm
                                 )
                             ),
-                        text = stringResource(id = label),
+                        text = "${stringResource(id = label)}${
+                            if (label == R.string.saved_to_your_device || label == R.string.saved_to_your_device_and_your_account && canvasItemData.size != null) " (Size: ${
+                                formatFileSize(
+                                    canvasItemData.size!!
+                                )
+                            })" else ""
+                        }",
                         color = MaterialTheme.colorScheme.onBackground,
                         style = if (label != R.string.voice_prompt) MaterialTheme.typography.labelLarge else MaterialTheme.typography.titleSmall,
                         fontWeight = if (label != R.string.voice_prompt) FontWeight.SemiBold else FontWeight.Bold,
@@ -398,113 +400,103 @@ fun CustomBottomSheet(
                                         )
                                     )
                                     .clickable {
-                                        scope
-                                            .launch { sheetState.hide() }
-                                            .invokeOnCompletion {
-                                                if (!sheetState.isVisible) {
-                                                    showBottomSheet.value = false
-                                                    if (hasPerformedHapticFeedback != null) {
-                                                        hasPerformedHapticFeedback.value = false
+                                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                            if (!sheetState.isVisible) {
+                                                showBottomSheet.value = false
+                                                if (hasPerformedHapticFeedback != null) {
+                                                    hasPerformedHapticFeedback.value = false
+                                                }
+                                            }
+                                            when (item.titleResource) {
+                                                R.string.whatsapp -> {
+                                                    try {
+                                                        context.startActivity(
+                                                            Intent(
+                                                                Intent.ACTION_VIEW, Uri.parse(
+                                                                    "whatsapp://send?phone=${item.subText}"
+                                                                )
+                                                            )
+                                                        )
+                                                    } catch (_: ActivityNotFoundException) {
+                                                        context.startActivity(
+                                                            Intent(
+                                                                Intent.ACTION_VIEW, Uri.parse(
+                                                                    "https://wa.me/${item.subText}"
+                                                                )
+                                                            )
+                                                        )
                                                     }
                                                 }
-                                                when (item.titleResource) {
-                                                    R.string.whatsapp -> {
-                                                        try {
-                                                            context.startActivity(
-                                                                Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    Uri.parse(
-                                                                        "whatsapp://send?phone=${item.subText}"
-                                                                    )
-                                                                )
-                                                            )
-                                                        } catch (_: ActivityNotFoundException) {
-                                                            context.startActivity(
-                                                                Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    Uri.parse(
-                                                                        "https://wa.me/${item.subText}"
-                                                                    )
-                                                                )
-                                                            )
-                                                        }
-                                                    }
 
-                                                    R.string.x -> {
-                                                        try {
-                                                            context.startActivity(
-                                                                Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    Uri.parse(
-                                                                        "twitter://user?screen_name=${
-                                                                            item.subText
-                                                                        }"
-                                                                    )
+                                                R.string.x -> {
+                                                    try {
+                                                        context.startActivity(
+                                                            Intent(
+                                                                Intent.ACTION_VIEW, Uri.parse(
+                                                                    "twitter://user?screen_name=${
+                                                                        item.subText
+                                                                    }"
                                                                 )
                                                             )
-                                                        } catch (_: ActivityNotFoundException) {
-                                                            context.startActivity(
-                                                                Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    Uri.parse(
-                                                                        "https://twitter.com/${
-                                                                            item.subText
-                                                                        }"
-                                                                    )
+                                                        )
+                                                    } catch (_: ActivityNotFoundException) {
+                                                        context.startActivity(
+                                                            Intent(
+                                                                Intent.ACTION_VIEW, Uri.parse(
+                                                                    "https://twitter.com/${
+                                                                        item.subText
+                                                                    }"
                                                                 )
                                                             )
-                                                        }
+                                                        )
                                                     }
+                                                }
 
-                                                    R.string.instagram -> {
-                                                        try {
-                                                            context.startActivity(
-                                                                Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    Uri.parse(
-                                                                        "instagram://user?username=${
-                                                                            item.subText
-                                                                        }"
-                                                                    )
+                                                R.string.instagram -> {
+                                                    try {
+                                                        context.startActivity(
+                                                            Intent(
+                                                                Intent.ACTION_VIEW, Uri.parse(
+                                                                    "instagram://user?username=${
+                                                                        item.subText
+                                                                    }"
                                                                 )
                                                             )
-                                                        } catch (_: ActivityNotFoundException) {
-                                                            context.startActivity(
-                                                                Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    Uri.parse(
-                                                                        "https://instagram.com/${
-                                                                            item.subText
-                                                                        }"
-                                                                    )
+                                                        )
+                                                    } catch (_: ActivityNotFoundException) {
+                                                        context.startActivity(
+                                                            Intent(
+                                                                Intent.ACTION_VIEW, Uri.parse(
+                                                                    "https://instagram.com/${
+                                                                        item.subText
+                                                                    }"
                                                                 )
                                                             )
-                                                        }
+                                                        )
                                                     }
+                                                }
 
-                                                    R.string.facebook -> {
-                                                        try {
-                                                            context.startActivity(
-                                                                Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    Uri.parse(
-                                                                        "fb://profile/${item.subText}"
-                                                                    )
+                                                R.string.facebook -> {
+                                                    try {
+                                                        context.startActivity(
+                                                            Intent(
+                                                                Intent.ACTION_VIEW, Uri.parse(
+                                                                    "fb://profile/${item.subText}"
                                                                 )
                                                             )
-                                                        } catch (_: ActivityNotFoundException) {
-                                                            context.startActivity(
-                                                                Intent(
-                                                                    Intent.ACTION_VIEW,
-                                                                    Uri.parse(
-                                                                        "https://facebook.com/${item.subText}"
-                                                                    )
+                                                        )
+                                                    } catch (_: ActivityNotFoundException) {
+                                                        context.startActivity(
+                                                            Intent(
+                                                                Intent.ACTION_VIEW, Uri.parse(
+                                                                    "https://facebook.com/${item.subText}"
                                                                 )
                                                             )
-                                                        }
+                                                        )
                                                     }
                                                 }
                                             }
+                                        }
                                     } else Modifier.customModifier(
                                     index = index, listSize = listItems.size
                                 ),
@@ -639,9 +631,7 @@ fun CustomBottomSheet(
 
                     label == R.string.saved_to_your_device || label == R.string.saved_to_your_device_and_your_account -> {
 
-                        ThumbnailImage(
-                            thumbnailBitmap = thumbnailBitmap,
-                            canvasItemData = canvasItemData,
+                        AsyncImage(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(240.dp)
@@ -651,7 +641,10 @@ fun CustomBottomSheet(
                                     width = 1.dp,
                                     color = MaterialTheme.colorScheme.surface,
                                     shape = MaterialTheme.shapes.extraSmall
-                                )
+                                ),
+                            model = canvasItemData.thumbnailUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop
                         )
 
                         Text(
@@ -704,10 +697,10 @@ fun CustomBottomSheet(
                                     .clickable(interactionSource = remember {
                                         MutableInteractionSource()
                                     }, indication = null) {
-                                        if (filePath != null) {
+                                        if (fileUriString != null) {
                                             shareVideo(
                                                 context = context,
-                                                videoPath = filePath,
+                                                videoUri = Uri.parse(fileUriString),
                                                 packageName = listItems[index][1] as String,
                                                 fallbackPackageName = if (listItems[index][2] != null) {
                                                     listItems[index][2] as String

@@ -67,11 +67,7 @@ class HomeViewModel : ViewModel() {
             deleteFileByUrl(item.url).onSuccess {
                 deleteFileByUrl(item.thumbnailUrl).onSuccess {
                     deleteMediaById(documentId = item.id).onSuccess {
-                        canvasItems = canvasItems.toMutableList().also {
-                            it.remove(
-                                item
-                            )
-                        }
+                        canvasItems = canvasItems.filterNot { it.id == item.id }
                         showSuccess = true
                         isEmpty = canvasItems.isEmpty()
                     }.onFailure {

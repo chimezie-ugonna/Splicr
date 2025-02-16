@@ -12,15 +12,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -90,10 +89,7 @@ fun SubscriptionScreen(
 ) {
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
-            color = MaterialTheme.colorScheme.background
+            modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
         ) {
             Box(
                 modifier = Modifier.fillMaxSize()
@@ -152,10 +148,11 @@ fun SubscriptionScreen(
 
                     CustomTopNavigationBar(modifier = Modifier
                         .fillMaxWidth()
+                        .statusBarsPadding()
                         .padding(
                             start = dimensionResource(id = R.dimen.spacingXl),
                             end = dimensionResource(id = R.dimen.spacingXl),
-                            top = 72.dp
+                            top = dimensionResource(id = R.dimen.spacingXl)
                         ),
                         centerComposable = { AppNameText(modifier = Modifier.align(Alignment.Center)) },
                         endStringResource = R.string.skip,
@@ -265,7 +262,8 @@ fun SubscriptionScreen(
 
                         val today = LocalDate.now()
                         val dateInSevenDays = today.plusDays(7)
-                        val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
+                        val formatter =
+                            DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.getDefault())
                         val dueDate = dateInSevenDays.format(formatter)
 
                         Column(
@@ -374,20 +372,19 @@ fun SubscriptionScreen(
                             end = dimensionResource(id = R.dimen.spacingXl),
                             bottom = dimensionResource(id = R.dimen.spacingXl)
                         )
+                        .navigationBarsPadding()
                         .align(Alignment.CenterHorizontally)
                         .clickable(interactionSource = remember {
                             MutableInteractionSource()
                         }, indication = null) {
                             scope.launch {
-                                subscriptionViewModel
-                                    .restorePurchases(context = context)
+                                subscriptionViewModel.restorePurchases(context = context)
                                     .onSuccess {
                                         goToHomeScreen(
                                             navController = navController,
                                             purchasesRestored = true
                                         )
-                                    }
-                                    .onFailure { exception ->
+                                    }.onFailure { exception ->
                                         snackBarIsError.value = true
                                         snackBarMessageResource.intValue = 0
                                         snackBarMessage.value =

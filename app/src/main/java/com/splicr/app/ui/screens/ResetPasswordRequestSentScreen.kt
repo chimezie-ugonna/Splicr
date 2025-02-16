@@ -5,14 +5,12 @@ package com.splicr.app.ui.screens
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -63,8 +61,7 @@ fun ResetPasswordRequestSentScreen(
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
+                .fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
 
@@ -195,8 +192,9 @@ fun ResetPasswordRequestSentScreen(
                 CustomTopNavigationBar(modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
+                    .statusBarsPadding()
                     .padding(
-                        vertical = 72.dp
+                        vertical = dimensionResource(id = R.dimen.spacingXl)
                     ),
                     startImageResource = R.drawable.back,
                     startStringResource = R.string.go_back,

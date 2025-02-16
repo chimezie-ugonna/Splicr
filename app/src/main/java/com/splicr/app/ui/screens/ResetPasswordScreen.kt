@@ -5,13 +5,12 @@ package com.splicr.app.ui.screens
 import android.util.Patterns
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -68,10 +67,7 @@ fun ResetPasswordScreen(
 ) {
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
-            color = MaterialTheme.colorScheme.background
+            modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
         ) {
 
             Box(
@@ -103,8 +99,9 @@ fun ResetPasswordScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .statusBarsPadding()
                         .padding(
-                            top = 72.dp
+                            top = dimensionResource(id = R.dimen.spacingXl)
                         )
                 ) {
                     CustomTopNavigationBar(
@@ -173,12 +170,14 @@ fun ResetPasswordScreen(
                         )
 
                         PrimaryButton(
-                            modifier = Modifier.padding(
-                                top = dimensionResource(id = R.dimen.spacingMd),
-                                bottom = dimensionResource(
-                                    id = R.dimen.spacingXl
+                            modifier = Modifier
+                                .padding(
+                                    top = dimensionResource(id = R.dimen.spacingMd),
+                                    bottom = dimensionResource(
+                                        id = R.dimen.spacingXl
+                                    )
                                 )
-                            ), textResource = R.string.Continue
+                                .navigationBarsPadding(), textResource = R.string.Continue
                         ) {
                             if (Patterns.EMAIL_ADDRESS.matcher(
                                     resetPasswordViewModel.emailValue.value.text.trim()

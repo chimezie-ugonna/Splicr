@@ -2,8 +2,8 @@ package com.splicr.app.data
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.AnnotatedString
-import com.splicr.app.viewModel.PromptViewModel
 
 data class PromptItemData(
     val isAuthor: Boolean = false,
@@ -13,9 +13,10 @@ data class PromptItemData(
     val message: AnnotatedString = AnnotatedString(text = ""),
     val showCanvasOptions: Boolean = false,
     val isLoading: Boolean = false,
+    val loadingMessage: MutableState<String> = mutableStateOf(""),
+    val hasTyped: MutableState<Boolean> = mutableStateOf(false),
     val trimRanges: List<TrimRangeData>? = null,
-    val isProcessing: MutableState<Boolean>? = null,
-    val viewModel: PromptViewModel? = null,
+    val displayedText: MutableState<AnnotatedString> = mutableStateOf(AnnotatedString(text = "")),
     val canvasChoiceList: List<AspectRatioChoiceItemData>? = null,
     val onClick: ((Int) -> Unit)? = null
 )

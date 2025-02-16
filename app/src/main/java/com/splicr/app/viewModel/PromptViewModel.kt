@@ -2,18 +2,28 @@ package com.splicr.app.viewModel
 
 import android.content.Context
 import android.net.Uri
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.splicr.app.R
 import com.splicr.app.data.PromptItemData
 import com.splicr.app.utils.MediaConfigurationUtil
 import com.splicr.app.utils.MediaConfigurationUtil.getAllVideoMetadata
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class PromptViewModel : ViewModel() {
+    var previousWaitingMessageResponse: String = ""
+    var waitingMessageJob: Job? = null
+    var typingEffectJob: Job? = null
     val promptValue = mutableStateOf(TextFieldValue(""))
     var mutableVideoUriString by mutableStateOf("")
         private set
@@ -21,6 +31,33 @@ class PromptViewModel : ViewModel() {
     var listItems by mutableStateOf(emptyList<PromptItemData>())
         private set
     private var areListItemsInitialized = false
+
+    fun typingEffect(
+        item: PromptItemData,
+        isTyping: MutableState<Boolean>,
+        hapticFeedback: HapticFeedback,
+        onTypingComplete: () -> Unit = {}
+    ) {
+        if (typingEffectJob?.isActive != true) {
+            typingEffectJob = viewModelScope.launch {
+                if (!item.isAuthor) {
+                    val messageToType = if (item.loadingMessage.value.isNotEmpty()) {
+                        AnnotatedString(item.loadingMessage.value)
+                    } else {
+                        item.message
+                    }
+                    isTyping.value = true
+                    for (i in 1..messageToType.length) {
+                        delay((20..30).random().toLong())
+                        item.displayedText.value = messageToType.subSequence(0, i)
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                    isTyping.value = false
+                    onTypingComplete()
+                }
+            }
+        }
+    }
 
     fun initializeListItems(uploadFormatStringResource: Int, videoUri: String, context: Context) {
         if (!areListItemsInitialized) {
@@ -30,9 +67,7 @@ class PromptViewModel : ViewModel() {
     }
 
     private fun updateListItems(
-        uploadFormatStringResource: Int,
-        videoUri: String,
-        context: Context
+        uploadFormatStringResource: Int, videoUri: String, context: Context
     ) {
         if (mutableVideoUriString != videoUri) {
             mutableVideoUriString = videoUri
@@ -80,10 +115,18 @@ class PromptViewModel : ViewModel() {
     }
 
     fun removeListItem(item: PromptItemData) {
-        listItems = listItems.toMutableList().also { itemData ->
-            itemData.remove(
+        listItems = listItems.filterNot { it == item }
+    }
+
+    fun updateMessageForItem(position: Int, newMessage: String) {
+        listItems = listItems.mapIndexed { index, item ->
+            if (index == position) {
+                item.copy(
+                    loadingMessage = mutableStateOf(newMessage), hasTyped = mutableStateOf(false)
+                )
+            } else {
                 item
-            )
+            }
         }
     }
 }

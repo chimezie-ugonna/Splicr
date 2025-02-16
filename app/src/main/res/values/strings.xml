@@ -125,7 +125,7 @@
     <string name="fast_forward">Fast forward</string>
     <string name="unexpected_type_of_credential">Unexpected type of credential</string>
     <string name="i_m_sorry_but_i_couldn_t_retrieve_any_media_from_the_text_you_provided_please_try_again_with_a_valid_media_url">I\'m sorry, but I couldn\'t retrieve any media from the text you provided. Please try again with a valid media URL.</string>
-    <string name="oops_i_ran_into_an_issue_while_processing_your_request_let_s_try_that_again_how_would_you_like_me_to_trim">Oops, I ran into an issue while processing your request. Let’s try that again! How would you like me to trim?</string>
+    <string name="oops_i_ran_into_an_issue_while_processing_your_request_let_s_try_that_again_how_would_you_like_me_to_trim">Oops, I ran into an issue while processing your request. Let’s try that again! How would you like to trim?</string>
     <string name="i_m_having_a_bit_of_trouble_responding_to_your_request_right_now_i_ll_need_you_to_try_again_later">I’m having a bit of trouble responding to your request right now. I’ll need you to try again later.</string>
     <string name="it_seems_i_can_t_reach_the_internet_at_the_moment_please_check_your_connection_and_give_it_another_go">It seems I can’t reach the internet at the moment. Please check your connection and give it another go.</string>
     <string name="oops_we_were_able_to_retrieve_the_media_from_the_url_but_something_seems_to_be_wrong_with_the_file_it_might_be_corrupted_or_in_an_unsupported_format_please_try_again_with_a_different_url_or_check_if_the_file_is_accessible_and_valid">Oops! 😔 We were able to retrieve the media from the URL, but something seems to be wrong with the file. It might be corrupted or in an unsupported format. Please try again with a different URL or check if the file is accessible and valid.</string>
@@ -160,6 +160,7 @@
     <string name="saving_your_medium_to_your_account_thank_you_for_your_patience">Saving your medium to your account. Thank you for your patience.</string>
     <string name="there_was_an_error_with_the_file">There was an error with the file.</string>
     <string name="an_error_occurred_while_downloading_video">An error occurred while downloading video</string>
+    <string name="an_error_occurred_while_processing_video">An error occurred while processing video</string>
     <string name="an_error_occurred_while_saving_to_your_account">An error occurred while saving to your account.</string>
     <string name="an_error_occurred_while_saving_to_your_device">An error occurred while saving to your device.</string>
     <string name="an_error_occurred_while_saving_to_your_account_failed_to_upload_video">An error occurred while saving to your account. Failed to upload video</string>
@@ -230,12 +231,13 @@
     <string name="support_number">+2348096449050</string>
     <string name="facebook">Facebook</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
-    <string name="for_high_quality_get_splicr_premium">For high-quality, get Splicr Premium</string>
-    <string name="_4k_media_may_use_codecs_not_supported_on_all_devices_check_compatibility_before_exporting">4K media may use codecs not supported on all devices. Check compatibility before exporting.</string>
     <string name="something_went_wrong_we_could_not_successfully_handle_that_operation">Something went wrong, we could not successfully handle that operation.</string>
-    <string name="waiting_message_prompt">Respond in the first person with a concise and unique waiting message that reassures a user with positivity, empathy, and a sense of ongoing progress, without revealing specific tasks or technical details. Ensure your response differs completely from your previous response, avoiding repetition and similar phrasing.</string>
-    <string name="this_was_your_previous_response">This was your previous response: %1$s</string>
+    <string name="waiting_message_prompt">Give a user a single line, first person, reassuring waiting message while some media is being processed. Improve progressively on your previous responses if not empty</string>
+    <string name="these_are_your_previous_responses">These are your previous responses, listed in the order they were given (from left to right), separated by plus signs: %1$s</string>
     <string name="the_operation_was_interrupted_if_this_wasn_t_intentional_you_can_try_again">The operation was interrupted. If this wasn’t intentional, you can try again.</string>
     <string name="share_video_via">Share video via</string>
+    <string name="downloaded_file_is_empty">Downloaded file is empty</string>
+    <string name="retrieving_size">Retrieving size</string>
+    <string name="unknown_viewmodel_class">Unknown ViewModel class</string>
 
 </resources>

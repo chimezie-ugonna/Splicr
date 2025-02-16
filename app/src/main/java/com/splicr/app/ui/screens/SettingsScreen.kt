@@ -6,11 +6,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -77,8 +78,7 @@ fun SettingsScreen(
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
+                .fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
             Box(
@@ -110,8 +110,9 @@ fun SettingsScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .statusBarsPadding()
                         .padding(
-                            top = 72.dp
+                            top = dimensionResource(id = R.dimen.spacingXl)
                         )
                 ) {
                     CustomTopNavigationBar(
@@ -523,7 +524,8 @@ fun SettingsScreen(
                                     listSize = listItems.size,
                                     bottomPadding = if (index == listItems.size - 1) dimensionResource(
                                         id = R.dimen.spacingXl
-                                    ) else 0.dp
+                                    ) + WindowInsets.navigationBars.asPaddingValues()
+                                        .calculateBottomPadding() else 0.dp
                                 )
                                 .clickable {
                                     when (item.titleResource) {

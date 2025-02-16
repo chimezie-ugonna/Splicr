@@ -1,6 +1,7 @@
 package com.splicr.app
 
 import android.app.Application
+import com.cloudinary.android.MediaManager
 import com.google.firebase.Firebase
 import com.google.firebase.appcheck.appCheck
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
@@ -17,5 +18,12 @@ class Splicr : Application() {
         Firebase.appCheck.installAppCheckProviderFactory(
             PlayIntegrityAppCheckProviderFactory.getInstance(),
         )
+
+        val config = HashMap<String, Any>()
+        config.put("cloud_name", BuildConfig.CLOUDINARY_CLOUD_NAME)
+        config.put("api_key", BuildConfig.CLOUDINARY_API_KEY)
+        config.put("api_secret", BuildConfig.CLOUDINARY_API_SECRET)
+        config.put("secure", true)
+        MediaManager.init(this, config)
     }
 }

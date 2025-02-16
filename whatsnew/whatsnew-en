@@ -1,10 +1,4 @@
-• Fixed scrolling interruptions on the prompt screen.
-• Subscription issues resolved in some regions.
-• Video processing stops when exiting.
-• Play/share videos from the home page.
-• Videos >30 sec can be selected, but premium is required for output.
-• Support via WhatsApp/Facebook; email removed.
-• Copy/paste text during AI chats.
-• Fixed fallback package names.
-• AI now notifies on video delays.
-• 4K feature availability alert.
+• Various enhancements and optimizations
+• Bug fixes and performance improvements
+• UI/UX tweaks for a better experience
+• Code refactoring and stability updates

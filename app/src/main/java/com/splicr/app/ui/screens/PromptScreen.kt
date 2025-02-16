@@ -22,14 +22,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -111,8 +110,7 @@ fun PromptScreen(
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
             modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
+                .fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
             Box(
@@ -144,8 +142,11 @@ fun PromptScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .statusBarsPadding()
                         .padding(
-                            top = 72.dp
+                            top = dimensionResource(
+                                id = R.dimen.spacingXl
+                            )
                         )
                         .imePadding()
                 ) {
@@ -176,6 +177,12 @@ fun PromptScreen(
                         )
                     }
 
+                    val isProcessing = rememberSaveable {
+                        mutableStateOf(false)
+                    }
+                    val isTyping = rememberSaveable {
+                        mutableStateOf(false)
+                    }
                     val listState = rememberLazyListState()
                     val isScrolledToBottom by remember {
                         derivedStateOf {
@@ -187,8 +194,33 @@ fun PromptScreen(
                         remember { mutableIntStateOf(promptViewModel.listItems.size) }
                     LaunchedEffect(promptViewModel.listItems.size) {
                         if (promptViewModel.listItems.isNotEmpty() && promptViewModel.listItems.size != previousListSize.intValue) {
-                            listState.animateScrollToItem(promptViewModel.listItems.size - 1)
+                            val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                            if (lastIndex >= 0) {
+                                listState.animateScrollToItem(lastIndex)
+                            }
                             previousListSize.intValue = promptViewModel.listItems.size
+                        }
+                    }
+
+                    val returnedFromProcessing = navController.currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.getLiveData<Boolean>("returnedFromProcessing")
+                        ?.observeAsState()
+
+                    LaunchedEffect(returnedFromProcessing?.value) {
+                        returnedFromProcessing?.value?.let { hasReturned ->
+                            if (hasReturned) {
+                                promptViewModel.addListItem(
+                                    PromptItemData(
+                                        message = AnnotatedString(
+                                            text = context.getString(R.string.how_else_would_you_like_to_trim)
+                                        )
+                                    )
+                                )
+                                navController.previousBackStackEntry?.savedStateHandle?.set(
+                                    "returnedFromProcessing", false
+                                )
+                            }
                         }
                     }
 
@@ -231,19 +263,12 @@ fun PromptScreen(
                                             Modifier
                                         }
                                     },
-                                    isAuthor = item.isAuthor,
-                                    message = item.message,
-                                    showCanvasOptions = item.showCanvasOptions,
-                                    videoUriString = item.videoUriString,
-                                    isLoading = item.isLoading,
+                                    item = item,
                                     navController = navController,
-                                    trimRanges = item.trimRanges,
-                                    isProcessing = item.isProcessing,
-                                    viewModel = item.viewModel,
-                                    thumbnailBitmap = item.thumbnailBitmap,
-                                    aspectRatioChoiceList = item.canvasChoiceList,
-                                    duration = item.duration,
-                                    onClick = item.onClick,
+                                    isProcessing = isProcessing,
+                                    viewModel = promptViewModel,
+                                    isTyping = isTyping,
+                                    listState = listState,
                                     scope = scope,
                                     subscriptionStatus = subscriptionStatus,
                                     snackBarMessage = snackBarMessage,
@@ -261,7 +286,10 @@ fun PromptScreen(
                                 .clip(CircleShape)
                                 .clickable {
                                     scope.launch {
-                                        listState.animateScrollToItem(promptViewModel.listItems.size - 1)
+                                        val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                                        if (lastIndex >= 0) {
+                                            listState.animateScrollToItem(lastIndex)
+                                        }
                                     }
                                 }
                                 .background(color = MaterialTheme.colorScheme.primary)
@@ -281,7 +309,8 @@ fun PromptScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentHeight()
-                            .padding(vertical = dimensionResource(id = R.dimen.spacingSm)),
+                            .padding(vertical = dimensionResource(id = R.dimen.spacingSm))
+                            .navigationBarsPadding(),
                         horizontalArrangement = Arrangement.spacedBy(
                             space = dimensionResource(
                                 id = R.dimen.spacingSm
@@ -289,9 +318,6 @@ fun PromptScreen(
                         ),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val isProcessing = rememberSaveable {
-                            mutableStateOf(false)
-                        }
                         val isRecording = rememberSaveable { mutableStateOf(false) }
                         val lifecycleOwner = LocalLifecycleOwner.current
                         val hapticFeedback = LocalHapticFeedback.current
@@ -363,8 +389,7 @@ fun PromptScreen(
                                     matches?.let {
                                         val newText = it.joinToString(" ")
                                         promptViewModel.promptValue.value = TextFieldValue(
-                                            newText,
-                                            selection = TextRange(newText.length)  // Set the cursor at the end
+                                            newText, selection = TextRange(newText.length)
                                         )
                                         hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     }
@@ -454,8 +479,8 @@ fun PromptScreen(
                         } else {
                             Image(modifier = Modifier
                                 .size(size = dimensionResource(id = R.dimen.spacingXl))
-                                .alpha(if (!isProcessing.value) 1f else 0.3f)
-                                .then(if (!isProcessing.value) {
+                                .alpha(if (!isProcessing.value && !isTyping.value) 1f else 0.3f)
+                                .then(if (!isProcessing.value && !isTyping.value) {
                                     Modifier.clickable(
                                         interactionSource = remember {
                                             MutableInteractionSource()

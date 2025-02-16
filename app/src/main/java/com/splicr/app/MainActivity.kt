@@ -37,6 +37,6 @@ class SubscriptionViewModelFactory(private val application: Application) :
         if (modelClass.isAssignableFrom(SubscriptionViewModel::class.java)) {
             return SubscriptionViewModel(application) as T
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
+        throw IllegalArgumentException(application.getString(R.string.unknown_viewmodel_class))
     }
 }

@@ -8,14 +8,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
@@ -67,42 +66,29 @@ fun NameYourProjectScreen(
     navController: NavHostController,
     canvasItemData: CanvasItemData = CanvasItemData(),
     videoUriString: String = "",
-    currentPosition: Long = 0,
-    isPlaying: Boolean = false,
     nameYourProjectViewModel: NameYourProjectViewModel = viewModel()
 ) {
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
-            color = MaterialTheme.colorScheme.background
+            modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
         ) {
             val context = LocalContext.current
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .statusBarsPadding()
                     .padding(
-                        top = 72.dp, start = dimensionResource(
-                            id = R.dimen.spacingXl
-                        ), end = dimensionResource(
-                            id = R.dimen.spacingXl
-                        ), bottom = dimensionResource(
+                        all = dimensionResource(
                             id = R.dimen.spacingXl
                         )
                     )
+                    .navigationBarsPadding()
                     .imePadding()
             ) {
                 CustomTopNavigationBar(modifier = Modifier.fillMaxWidth(),
                     startImageResource = R.drawable.back,
                     startStringResource = R.string.go_back,
                     startOnClick = {
-                        navController.previousBackStackEntry?.savedStateHandle?.set(
-                            "currentPosition", currentPosition
-                        )
-                        navController.previousBackStackEntry?.savedStateHandle?.set(
-                            "isPlaying", isPlaying
-                        )
                         navController.popBackStack()
                     },
                     centerComposable = { AppNameText(modifier = Modifier.align(Alignment.Center)) },
@@ -120,11 +106,7 @@ fun NameYourProjectScreen(
                                 Uri.encode(
                                     videoUriString
                                 )
-                            }/NameYourProjectScreen/${
-                                currentPosition
-                            }/${
-                                isPlaying
-                            }"
+                            }/NameYourProjectScreen"
                         )
                     })
 
@@ -201,7 +183,6 @@ fun NameYourProjectScreen(
                                 fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Start
                             )
-
 
                             Text(
                                 modifier = Modifier.wrapContentSize(),
@@ -300,11 +281,7 @@ fun NameYourProjectScreen(
                             Uri.encode(
                                 videoUriString
                             )
-                        }/NameYourProjectScreen/${
-                            currentPosition
-                        }/${
-                            isPlaying
-                        }"
+                        }/NameYourProjectScreen"
                     )
                 }
             }

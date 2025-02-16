@@ -1,7 +1,10 @@
 package com.splicr.app.ui.screens
 
+import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.net.Uri
+import androidx.activity.compose.LocalActivity
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -14,13 +17,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -32,12 +34,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,9 +56,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.media3.common.MediaItem
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -72,10 +71,10 @@ import com.splicr.app.ui.components.AppNameText
 import com.splicr.app.ui.components.CustomTopNavigationBar
 import com.splicr.app.ui.theme.SplicrTheme
 import com.splicr.app.utils.MediaConfigurationUtil.formatDuration
-import com.splicr.app.utils.ScreenOrientationUtil
+import com.splicr.app.viewModel.MediaPlayerViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
+@OptIn(UnstableApi::class)
 @Composable
 fun MediaPlayerScreen(
     isDarkTheme: MutableState<Boolean> = remember {
@@ -84,380 +83,316 @@ fun MediaPlayerScreen(
     navController: NavHostController,
     videoUriString: String = "",
     showDone: Boolean = true,
+    mediaPlayerViewModel: MediaPlayerViewModel = viewModel(),
     canvasItemData: CanvasItemData = CanvasItemData()
 ) {
-    ScreenOrientationUtil.SetScreenOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
+        val context = LocalContext.current
+        val activity = LocalActivity.current
+        LaunchedEffect(mediaPlayerViewModel.isFullscreen.value) {
+            toggleOrientation(
+                activity = activity, isLandscape = mediaPlayerViewModel.isFullscreen.value
+            )
+        }
         Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.navigationBars),
-            color = MaterialTheme.colorScheme.background
+            modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(
-                        top = 72.dp
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .clickable(interactionSource = remember {
+                    MutableInteractionSource()
+                }, indication = null) {
+                    mediaPlayerViewModel.controlsVisible.value =
+                        !mediaPlayerViewModel.controlsVisible.value
+                }) {
+
+                val lifecycleOwner = rememberUpdatedState(newValue = LocalLifecycleOwner.current)
+                LaunchedEffect(videoUriString) {
+                    if (mediaPlayerViewModel.exoPlayer.mediaItemCount == 0) {
+                        mediaPlayerViewModel.loadVideo(Uri.parse(videoUriString))
+                    }
+                }
+                LaunchedEffect(key1 = showDone) {
+                    navController.previousBackStackEntry?.savedStateHandle?.set(
+                        "returnedFromProcessing", showDone
                     )
-            ) {
-                val context = LocalContext.current
-                val lifecycleOwner = LocalLifecycleOwner.current
-                val videoUri = remember {
-                    Uri.parse(videoUriString)
                 }
-                val exoPlayer = remember {
-                    ExoPlayer.Builder(context).build().apply {
-                        setMediaItem(MediaItem.fromUri(videoUri))
-                        prepare()
-                        playWhenReady = true
-                    }
-                }
-                val isPlaying = rememberSaveable { mutableStateOf(false) }
-                val controlsVisible = rememberSaveable {
-                    mutableStateOf(true)
-                }
-                val currentPosition = rememberSaveable { mutableLongStateOf(0L) }
-                val currentPositionState =
-                    navController.currentBackStackEntry?.savedStateHandle?.getLiveData<Long>("currentPosition")
-                        ?.observeAsState()
-                val isPlayingState =
-                    navController.currentBackStackEntry?.savedStateHandle?.getLiveData<Boolean>("isPlaying")
-                        ?.observeAsState()
-
-                LaunchedEffect(videoUri) {
-                    // Only set up the player if the video URI changes
-                    exoPlayer.setMediaItem(MediaItem.fromUri(videoUri))
-                    exoPlayer.prepare()
-
-                    // Restore playback position
-                    currentPositionState?.value?.let {
-                        currentPosition.longValue = it
-                        exoPlayer.seekTo(currentPosition.longValue)
-                    }
-
-                    // Restore playback state
-                    isPlayingState?.value?.let {
-                        isPlaying.value = it
-                        if (isPlaying.value) exoPlayer.play() else exoPlayer.pause()
-                    }
-                }
-
-                val duration = rememberSaveable { mutableLongStateOf(0L) }
-                val scope = rememberCoroutineScope()
 
                 DisposableEffect(Unit) {
                     val lifecycleObserver = LifecycleEventObserver { _, event ->
                         when (event) {
                             Lifecycle.Event.ON_PAUSE -> {
-                                // Pause playback when the screen is not in the foreground
-                                exoPlayer.pause()
-                            }
-
-                            Lifecycle.Event.ON_DESTROY -> {
-                                // Release the player when the composable is destroyed
-                                exoPlayer.release()
+                                if (!(context as Activity).isChangingConfigurations) {
+                                    mediaPlayerViewModel.exoPlayer.pause()
+                                }
                             }
 
                             else -> {}
                         }
                     }
-                    lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
+
+                    lifecycleOwner.value.lifecycle.addObserver(lifecycleObserver)
 
                     onDispose {
-                        lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
-                        navController.currentBackStackEntry?.savedStateHandle?.set(
-                            "currentPosition", currentPosition.longValue
-                        )
-                        navController.currentBackStackEntry?.savedStateHandle?.set(
-                            "isPlaying", isPlaying.value
-                        )
+                        lifecycleOwner.value.lifecycle.removeObserver(lifecycleObserver)
                     }
                 }
 
-                CustomTopNavigationBar(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = dimensionResource(id = R.dimen.spacingXl)
-                    ),
-                    startImageResource = R.drawable.back,
-                    startStringResource = R.string.go_back,
-                    startOnClick = { navController.popBackStack() },
-                    centerComposable = { AppNameText(modifier = Modifier.align(Alignment.Center)) },
-                    endStringResource = if (showDone) R.string.done else null,
-                    endOnClick = if (showDone) {
-                        {
-                            navController.navigate(
-                                route = "${if (Firebase.auth.currentUser != null) "NameYourProjectScreen" else "MediaSplicedScreen"}/${
-                                    Uri.encode(
-                                        Gson().toJson(
-                                            canvasItemData
-                                        )
-                                    )
-                                }/${
-                                    Uri.encode(
-                                        videoUriString
-                                    )
-                                }/MediaPlayerScreen/${
-                                    currentPosition.longValue
-                                }/${
-                                    isPlaying.value
-                                }"
+                LaunchedEffect(
+                    mediaPlayerViewModel.controlsVisible.value, mediaPlayerViewModel.isPlaying.value
+                ) {
+                    if (mediaPlayerViewModel.controlsVisible.value && mediaPlayerViewModel.isPlaying.value) {
+                        delay(3000)
+                        mediaPlayerViewModel.controlsVisible.value = false
+                    }
+                }
+
+                AndroidView(
+                    factory = {
+                        PlayerView(context).apply {
+                            player = mediaPlayerViewModel.exoPlayer
+                            useController = false
+                        }
+                    }, modifier = Modifier.fillMaxSize()
+                )
+
+                AnimatedVisibility(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .align(Alignment.TopCenter),
+                    visible = mediaPlayerViewModel.controlsVisible.value,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    CustomTopNavigationBar(modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = Brush.linearGradient(
+                                0f to MaterialTheme.colorScheme.surface.copy(
+                                    alpha = 0.3f
+                                ), 1f to MaterialTheme.colorScheme.surface.copy(
+                                    alpha = 0.7f
+                                )
                             )
-                        }
-                    } else {
-                        {}
-                    })
-
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .padding(
-                        top = dimensionResource(
-                            id = R.dimen.spacingXl
                         )
-                    )
-                    .clickable(interactionSource = remember {
-                        MutableInteractionSource()
-                    }, indication = null) {
-                        controlsVisible.value = !controlsVisible.value
-                    }) {
-
-                    LaunchedEffect(exoPlayer) {
-                        exoPlayer.addListener(object : Player.Listener {
-                            override fun onIsPlayingChanged(state: Boolean) {
-                                isPlaying.value = exoPlayer.isPlaying
-                                if (exoPlayer.isPlaying) {
-                                    scope.launch {
-                                        while (exoPlayer.isPlaying) {
-                                            currentPosition.longValue = exoPlayer.currentPosition
-                                            duration.longValue = exoPlayer.duration
-                                            delay(1000) // Update position every second
-                                        }
-                                    }
-                                }
+                        .statusBarsPadding()
+                        .padding(
+                            all = dimensionResource(id = R.dimen.spacingXl)
+                        ),
+                        startImageResource = R.drawable.back,
+                        startStringResource = R.string.go_back,
+                        startOnClick = { navController.popBackStack() },
+                        centerComposable = { AppNameText(modifier = Modifier.align(Alignment.Center)) },
+                        endStringResource = if (showDone) R.string.done else null,
+                        endOnClick = if (showDone) {
+                            {
+                                navController.navigate(
+                                    route = "${if (Firebase.auth.currentUser != null) "NameYourProjectScreen" else "MediaSplicedScreen"}/${
+                                        Uri.encode(
+                                            Gson().toJson(
+                                                canvasItemData
+                                            )
+                                        )
+                                    }/${
+                                        Uri.encode(
+                                            videoUriString
+                                        )
+                                    }${if (Firebase.auth.currentUser != null) "" else "/MediaPlayerScreen"}"
+                                )
                             }
-
-                            override fun onPlaybackStateChanged(playbackState: Int) {
-                                if (playbackState == ExoPlayer.STATE_ENDED) {
-                                    currentPosition.longValue = duration.longValue
-                                    controlsVisible.value = true
-                                    isPlaying.value = false // Update the state when playback ends
-                                }
-                            }
+                        } else {
+                            {}
                         })
-                    }
+                }
 
-                    LaunchedEffect(controlsVisible.value, isPlaying.value) {
-                        if (controlsVisible.value && isPlaying.value) {
-                            delay(3000)
-                            controlsVisible.value = false
-                        }
-                    }
-
-                    AndroidView(
-                        factory = {
-                            PlayerView(context).apply {
-                                player = exoPlayer
-                                useController = false
-                            }
-                        }, modifier = Modifier.fillMaxSize()
-                    )
-
+                AnimatedVisibility(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .align(Alignment.BottomCenter),
+                    visible = mediaPlayerViewModel.controlsVisible.value,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .wrapContentHeight()
-                            .align(Alignment.BottomCenter)
+                            .background(
+                                brush = Brush.linearGradient(
+                                    0f to MaterialTheme.colorScheme.surface.copy(
+                                        alpha = 0.3f
+                                    ), 1f to MaterialTheme.colorScheme.surface.copy(
+                                        alpha = 0.7f
+                                    )
+                                )
+                            )
+                            .navigationBarsPadding()
+                            .padding(all = dimensionResource(id = R.dimen.spacingXl)),
+                        verticalArrangement = Arrangement.spacedBy(
+                            space = dimensionResource(
+                                id = R.dimen.spacingMd
+                            )
+                        )
                     ) {
-                        AnimatedVisibility(
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+
+                            Box(modifier = Modifier
+                                .size(size = 32.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    mediaPlayerViewModel.currentPosition.longValue =
+                                        (mediaPlayerViewModel.currentPosition.longValue - 10000).coerceAtLeast(
+                                            0
+                                        )
+                                    mediaPlayerViewModel.exoPlayer.seekTo(
+                                        mediaPlayerViewModel.currentPosition.longValue
+                                    )
+                                }
+                                .background(color = MaterialTheme.colorScheme.surface)
+                                .padding(all = dimensionResource(id = R.dimen.spacingXxxs))) {
+                                Image(
+                                    modifier = Modifier
+                                        .size(size = dimensionResource(id = R.dimen.spacingMd))
+                                        .align(Alignment.Center),
+                                    painter = painterResource(id = R.drawable.fast_rewind),
+                                    contentDescription = stringResource(R.string.fast_rewind)
+                                )
+                            }
+
+                            Box(modifier = Modifier
+                                .size(size = 32.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    if (mediaPlayerViewModel.exoPlayer.playbackState == Player.STATE_ENDED) {
+                                        mediaPlayerViewModel.exoPlayer.seekTo(0)
+                                    }
+                                    if (mediaPlayerViewModel.isPlaying.value) {
+                                        mediaPlayerViewModel.exoPlayer.pause()
+                                        mediaPlayerViewModel.isPlaying.value = false
+                                    } else {
+                                        mediaPlayerViewModel.exoPlayer.play()
+                                        mediaPlayerViewModel.isPlaying.value = true
+                                    }
+                                }
+                                .background(color = MaterialTheme.colorScheme.surface)
+                                .padding(all = dimensionResource(id = R.dimen.spacingXxxs))) {
+                                Image(
+                                    modifier = Modifier
+                                        .size(size = dimensionResource(id = R.dimen.spacingMd))
+                                        .align(Alignment.Center), painter = painterResource(
+                                        id = if (mediaPlayerViewModel.isPlaying.value) {
+                                            R.drawable.pause
+                                        } else {
+                                            R.drawable.play
+                                        }
+                                    ), contentDescription = stringResource(R.string.play_medium)
+                                )
+                            }
+
+                            Box(modifier = Modifier
+                                .size(size = 32.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    mediaPlayerViewModel.currentPosition.longValue =
+                                        (mediaPlayerViewModel.currentPosition.longValue + 10000).coerceAtMost(
+                                            mediaPlayerViewModel.duration.longValue
+                                        )
+                                    mediaPlayerViewModel.exoPlayer.seekTo(
+                                        mediaPlayerViewModel.currentPosition.longValue
+                                    )
+                                }
+                                .background(color = MaterialTheme.colorScheme.surface)
+                                .padding(all = dimensionResource(id = R.dimen.spacingXxxs))) {
+                                Image(
+                                    modifier = Modifier
+                                        .size(size = dimensionResource(id = R.dimen.spacingMd))
+                                        .align(Alignment.Center),
+                                    painter = painterResource(id = R.drawable.fast_forward),
+                                    contentDescription = stringResource(R.string.fast_forward)
+                                )
+                            }
+                        }
+                        if (mediaPlayerViewModel.duration.longValue > 0) {
+                            Slider(
+                                value = mediaPlayerViewModel.currentPosition.longValue.toFloat(),
+                                onValueChange = {
+                                    mediaPlayerViewModel.exoPlayer.seekTo(it.toLong())
+                                    mediaPlayerViewModel.currentPosition.longValue = it.toLong()
+                                },
+                                valueRange = 0f..mediaPlayerViewModel.duration.longValue.toFloat(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .wrapContentHeight(),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = MaterialTheme.colorScheme.primary,
+                                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                                    inactiveTrackColor = MaterialTheme.colorScheme.tertiary
+                                )
+                            )
+                        }
+
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .wrapContentHeight(),
-                            visible = controlsVisible.value,
-                            enter = fadeIn(),
-                            exit = fadeOut()
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        brush = Brush.linearGradient(
-                                            0f to MaterialTheme.colorScheme.surface.copy(
-                                                alpha = 0.3f
-                                            ), 1f to MaterialTheme.colorScheme.surface.copy(
-                                                alpha = 0.7f
+                            Text(
+                                text = buildAnnotatedString {
+                                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                        append(
+                                            formatDuration(
+                                                durationMillis = mediaPlayerViewModel.currentPosition.longValue,
+                                                shouldBeInFullFormat = false
                                             )
                                         )
-                                    )
-                                    .padding(all = dimensionResource(id = R.dimen.spacingXl)),
-                                verticalArrangement = Arrangement.spacedBy(
-                                    space = dimensionResource(
-                                        id = R.dimen.spacingMd
-                                    )
-                                )
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceEvenly
-                                ) {
-
-                                    Box(modifier = Modifier
-                                        .size(size = 32.dp)
-                                        .clip(CircleShape)
-                                        .clickable {
-                                            currentPosition.longValue =
-                                                (currentPosition.longValue - 10000).coerceAtLeast(
-                                                    0
-                                                )
-                                            exoPlayer.seekTo(currentPosition.longValue)
-                                        }
-                                        .background(color = MaterialTheme.colorScheme.surface)
-                                        .padding(all = dimensionResource(id = R.dimen.spacingXxxs))) {
-                                        Image(
-                                            modifier = Modifier
-                                                .size(size = dimensionResource(id = R.dimen.spacingMd))
-                                                .align(Alignment.Center),
-                                            painter = painterResource(id = R.drawable.fast_rewind),
-                                            contentDescription = stringResource(R.string.fast_rewind)
-                                        )
                                     }
-
-                                    Box(modifier = Modifier
-                                        .size(size = 32.dp)
-                                        .clip(CircleShape)
-                                        .clickable {
-                                            if (exoPlayer.playbackState == Player.STATE_ENDED) {
-                                                exoPlayer.seekTo(0)
-                                            }
-                                            if (exoPlayer.isPlaying) {
-                                                exoPlayer.pause()
-                                                isPlaying.value = false
-                                            } else {
-                                                exoPlayer.play()
-                                                isPlaying.value = true
-                                            }
-                                        }
-                                        .background(color = MaterialTheme.colorScheme.surface)
-                                        .padding(all = dimensionResource(id = R.dimen.spacingXxxs))) {
-                                        Image(
-                                            modifier = Modifier
-                                                .size(size = dimensionResource(id = R.dimen.spacingMd))
-                                                .align(Alignment.Center),
-                                            painter = painterResource(
-                                                id = if (isPlaying.value) {
-                                                    R.drawable.pause
-                                                } else {
-                                                    R.drawable.play
-                                                }
-                                            ),
-                                            contentDescription = stringResource(R.string.play_medium)
-                                        )
-                                    }
-
-                                    Box(modifier = Modifier
-                                        .size(size = 32.dp)
-                                        .clip(CircleShape)
-                                        .clickable {
-                                            currentPosition.longValue =
-                                                (currentPosition.longValue + 10000).coerceAtMost(
-                                                    duration.longValue
-                                                )
-                                            exoPlayer.seekTo(currentPosition.longValue)
-                                        }
-                                        .background(color = MaterialTheme.colorScheme.surface)
-                                        .padding(all = dimensionResource(id = R.dimen.spacingXxxs))) {
-                                        Image(
-                                            modifier = Modifier
-                                                .size(size = dimensionResource(id = R.dimen.spacingMd))
-                                                .align(Alignment.Center),
-                                            painter = painterResource(id = R.drawable.fast_forward),
-                                            contentDescription = stringResource(R.string.fast_forward)
-                                        )
-                                    }
-                                }
-                                if (duration.longValue > 0) {
-                                    Slider(
-                                        value = currentPosition.longValue.toFloat(),
-                                        onValueChange = {
-                                            exoPlayer.seekTo(it.toLong())
-                                            currentPosition.longValue = it.toLong()
-                                        },
-                                        valueRange = 0f..duration.longValue.toFloat(),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .wrapContentHeight(),
-                                        colors = SliderDefaults.colors(
-                                            thumbColor = MaterialTheme.colorScheme.primary,
-                                            activeTrackColor = MaterialTheme.colorScheme.primary,
-                                            inactiveTrackColor = MaterialTheme.colorScheme.tertiary
-                                        )
-                                    )
-                                }
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .wrapContentHeight(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = buildAnnotatedString {
-                                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                                append(
-                                                    formatDuration(
-                                                        durationMillis = currentPosition.longValue,
-                                                        shouldBeInFullFormat = false
-                                                    )
-                                                )
-                                            }
-                                            append(" / ")
-                                            withStyle(style = SpanStyle(fontWeight = FontWeight.Normal)) {
-                                                append(
-                                                    formatDuration(
-                                                        durationMillis = duration.longValue,
-                                                        shouldBeInFullFormat = false
-                                                    )
-                                                )
-                                            }
-                                        },
-                                        color = MaterialTheme.colorScheme.onBackground,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontSize = 10.sp
-                                    )
-
-                                    Spacer(modifier = Modifier.weight(weight = 1f))
-
-                                    Image(modifier = Modifier
-                                        .size(size = dimensionResource(id = R.dimen.spacingMd))
-                                        .clickable(interactionSource = remember {
-                                            MutableInteractionSource()
-                                        }, indication = null) {
-                                            navController.navigate(
-                                                "FullScreenMediaPlayerScreen/${
-                                                    Uri.encode(
-                                                        videoUriString
-                                                    )
-                                                }/${
-                                                    currentPosition.longValue
-                                                }/${
-                                                    isPlaying.value
-                                                }/${
-                                                    duration.longValue
-                                                }"
+                                    append(" / ")
+                                    withStyle(style = SpanStyle(fontWeight = FontWeight.Normal)) {
+                                        append(
+                                            formatDuration(
+                                                durationMillis = mediaPlayerViewModel.duration.longValue,
+                                                shouldBeInFullFormat = false
                                             )
-                                        },
-                                        painter = painterResource(id = R.drawable.fullscreen),
-                                        contentDescription = stringResource(R.string.enter_fullscreen)
-                                    )
-                                }
-                            }
+                                        )
+                                    }
+                                },
+                                color = MaterialTheme.colorScheme.onBackground,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 10.sp
+                            )
+
+                            Spacer(modifier = Modifier.weight(weight = 1f))
+
+                            Image(modifier = Modifier
+                                .size(size = dimensionResource(id = R.dimen.spacingMd))
+                                .clickable(interactionSource = remember {
+                                    MutableInteractionSource()
+                                }, indication = null) {
+                                    mediaPlayerViewModel.isFullscreen.value =
+                                        !mediaPlayerViewModel.isFullscreen.value
+                                },
+                                painter = painterResource(id = R.drawable.fullscreen),
+                                contentDescription = stringResource(R.string.enter_fullscreen)
+                            )
                         }
                     }
                 }
-
             }
         }
+    }
+}
+
+fun toggleOrientation(activity: Activity?, isLandscape: Boolean) {
+    activity?.requestedOrientation = if (isLandscape) {
+        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+    } else {
+        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     }
 }
 
