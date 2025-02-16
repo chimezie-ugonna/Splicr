@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "503514877040",
+    "project_id": "splicr-staging",
+    "storage_bucket": "splicr-staging.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:503514877040:android:61751ab37a644eb18978b5",
+        "android_client_info": {
+          "package_name": "com.splicr.app.staging"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "503514877040-c2erudv0t1tgmn9hpvg3cu0pjok3njtg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.splicr.app.staging",
+            "certificate_hash": "e3a09201b49b0b01d2f2d1b7fbf0d36f9fe7b35c"
+          }
+        },
+        {
+          "client_id": "503514877040-dovv2j1ea0ef4rcs41kosgoddamfbara.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbLVHLQULPCLmAxolhcuW84jW6UyvPGI8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "503514877040-dovv2j1ea0ef4rcs41kosgoddamfbara.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

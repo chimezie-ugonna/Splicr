@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "491234027774",
+    "project_id": "splicr-development",
+    "storage_bucket": "splicr-development.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:491234027774:android:4991b3abd617ba70501daf",
+        "android_client_info": {
+          "package_name": "com.splicr.app.debug"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "491234027774-dq3j6uacrhsk0svkvd579dp6qbs3vnbb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.splicr.app.debug",
+            "certificate_hash": "29b6bdeda14c38dcf50f8be6397f5f7986fe5ea2"
+          }
+        },
+        {
+          "client_id": "491234027774-8pe87g8jtb59pdriqm8pl0h1qjsblq10.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZBqMhUacjmEnj6GZ9XNu61i2cQ8GCOjM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "491234027774-8pe87g8jtb59pdriqm8pl0h1qjsblq10.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
