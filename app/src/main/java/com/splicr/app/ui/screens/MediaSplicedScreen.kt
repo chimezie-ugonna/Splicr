@@ -509,7 +509,7 @@ fun export(
     ) { success, errorMessageResource, errorMessage ->
         showExportingMediumBottomSheet.value = false
         if (success) {
-            //homeViewModel.addItem(item = canvasItemData)
+            homeViewModel.addItem(item = canvasItemData)
             showSavedMediumBottomSheet.value = true
         } else {
             if (errorMessageResource != null) {
