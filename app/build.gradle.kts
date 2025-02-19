@@ -1,13 +1,13 @@
 @file:Suppress("UnstableApiUsage")
 
-import com.project.starter.easylauncher.filter.ColorRibbonFilter
+import com.project.starter.easylauncher.filter.ChromeLikeFilter
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
     id("com.google.gms.google-services")
-    id("com.starter.easylauncher") version "6.2.0"
+    id("com.starter.easylauncher") version "6.4.0"
 }
 
 android {
@@ -223,26 +223,28 @@ dependencies {
 
 easylauncher {
     buildTypes {
-        register("staging") {
+        register("debug") {
             filters(
-                customRibbon(
-                    label = "BETA",
+                chromeLike(
+                    label = "DEBUG",
                     labelColor = "#000000",
                     ribbonColor = "#FFFFFF",
-                    gravity = ColorRibbonFilter.Gravity.BOTTOM,
+                    gravity = ChromeLikeFilter.Gravity.BOTTOM,
+                    labelPadding = 15,
                     fontName = "ComicSansMs",
                     textSizeRatio = 0.1f
                 )
             )
         }
 
-        register("debug") {
+        register("staging") {
             filters(
-                customRibbon(
-                    label = "DEBUG",
+                chromeLike(
+                    label = "BETA",
                     labelColor = "#000000",
                     ribbonColor = "#FFFFFF",
-                    gravity = ColorRibbonFilter.Gravity.BOTTOM,
+                    gravity = ChromeLikeFilter.Gravity.BOTTOM,
+                    labelPadding = 15,
                     fontName = "ComicSansMs",
                     textSizeRatio = 0.1f
                 )
