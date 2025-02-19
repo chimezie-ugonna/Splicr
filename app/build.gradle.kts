@@ -18,8 +18,8 @@ android {
         applicationId = "com.splicr.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 27
-        versionName = "8.0.1"
+        versionCode = 28
+        versionName = "8.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
