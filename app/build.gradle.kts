@@ -18,8 +18,8 @@ android {
         applicationId = "com.splicr.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 28
-        versionName = "8.0.2"
+        versionCode = 29
+        versionName = "8.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -108,21 +108,17 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_19
-        targetCompatibility = JavaVersion.VERSION_19
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     kotlinOptions {
-        jvmTarget = "19"
+        jvmTarget = "21"
     }
 
     buildFeatures {
         compose = true
         viewBinding = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.5"
     }
 
     packaging {

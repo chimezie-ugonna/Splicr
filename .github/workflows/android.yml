@@ -50,6 +50,17 @@ jobs:
             echo "VARIANT=release" >> $GITHUB_ENV
           fi
 
+      # Debug Environment Variables (Temporary - Remove After Debugging)
+      - name: Debug Environment Variables
+        run: |
+          echo "Cloudinary Cloud Name: $CLOUDINARY_CLOUD_NAME"
+          echo "Cloudinary API Key: $CLOUDINARY_API_KEY"
+          echo "Cloudinary API Secret Length: ${#CLOUDINARY_API_SECRET}"  # Masked
+        env:
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+
       # Build the project with Gradle
       - name: Build with Gradle
         run: ./gradlew clean bundle${{ env.VARIANT }} -PversionCode=$VERSION_CODE -PversionName=$VERSION_NAME

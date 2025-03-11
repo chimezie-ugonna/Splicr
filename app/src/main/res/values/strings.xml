@@ -239,5 +239,6 @@
     <string name="downloaded_file_is_empty">Downloaded file is empty</string>
     <string name="retrieving_size">Retrieving size</string>
     <string name="unknown_viewmodel_class">Unknown ViewModel class</string>
+    <string name="deletion_from_cloudinary_failed">Deletion from cloudinary failed</string>
 
 </resources>
