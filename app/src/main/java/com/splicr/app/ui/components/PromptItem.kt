@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.navigation.NavHostController
 import com.google.gson.Gson
 import com.splicr.app.R
@@ -172,8 +173,7 @@ fun PromptItem(
                             val isTappable = !isProcessing.value && !isTyping.value
                             repeat(item.canvasChoiceList.size) { index ->
                                 val aspectRatioWidth = item.canvasChoiceList[index].aspectRatioWidth
-                                val aspectRatioHeight =
-                                    item.canvasChoiceList[index].aspectRatioHeight
+                                val aspectRatioHeight = item.canvasChoiceList[index].aspectRatioHeight
                                 val primaryColor = MaterialTheme.colorScheme.primary
                                 Row(modifier = Modifier
                                     .fillMaxWidth()
@@ -232,7 +232,7 @@ fun PromptItem(
 
                                                 uploadVideoAndWaitForPreview(
                                                     context = context,
-                                                    uri = Uri.parse(item.videoUriString),
+                                                    uri = item.videoUriString.toUri(),
                                                     trimRanges = item.trimRanges,
                                                     aspectRatio = convertDimensionsToAspectRatio(
                                                         context = context,
@@ -246,9 +246,7 @@ fun PromptItem(
                                                         viewModel.previousWaitingMessageResponse =
                                                             ""
                                                     }
-                                                    if (!videoUrl.isNullOrEmpty() && Uri.parse(
-                                                            videoUrl
-                                                        ) != Uri.EMPTY && !thumbnailUrl.isNullOrEmpty()
+                                                    if (!videoUrl.isNullOrEmpty() && videoUrl.toUri() != Uri.EMPTY && !thumbnailUrl.isNullOrEmpty()
                                                     ) {
                                                         navController.navigate(
                                                             "MediaPlayerScreen/${
@@ -513,11 +511,11 @@ fun PromptItem(
                                     if (item.trimRanges.isNotEmpty()) {
                                         var width = getAllVideoMetadata(
                                             context = context,
-                                            videoUri = Uri.parse(viewModel.mutableVideoUriString)
+                                            videoUri = viewModel.mutableVideoUriString.toUri()
                                         )?.width
                                         var height = getAllVideoMetadata(
                                             context = context,
-                                            videoUri = Uri.parse(viewModel.mutableVideoUriString)
+                                            videoUri = viewModel.mutableVideoUriString.toUri()
                                         )?.height
                                         if (width == null || height == null || height == 0 || convertDimensionsToAspectRatio(
                                                 context = context,

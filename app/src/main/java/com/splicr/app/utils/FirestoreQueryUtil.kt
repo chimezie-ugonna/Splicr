@@ -1,6 +1,7 @@
 package com.splicr.app.utils
 
 import android.content.Context
+import com.cloudinary.android.MediaManager
 import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.Query
@@ -9,6 +10,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import com.splicr.app.R
+import com.splicr.app.utils.MediaConfigurationUtil.getUserId
 import kotlinx.coroutines.tasks.await
 
 object FirestoreQueryUtil {
@@ -48,9 +50,8 @@ object FirestoreQueryUtil {
     }
 
     suspend fun deleteUserDataAndAccount(context: Context): Result<Boolean> {
-        val user =
-            Firebase.auth.currentUser
-                ?: return Result.failure(Exception(context.getString(R.string.no_account_signed_in)))
+        val user = Firebase.auth.currentUser
+            ?: return Result.failure(Exception(context.getString(R.string.no_account_signed_in)))
         val userId = user.uid
         val firestore = Firebase.firestore
 
@@ -74,7 +75,21 @@ object FirestoreQueryUtil {
             return Result.failure(e)
         }
 
-        // Step 2: Delete documents from the subscriptions collection
+        // Step 2: Delete medium from cloudinary
+        try {
+            val options = HashMap<String, Any>()
+            options.put("resource_type", "video")
+            val result = MediaManager.get().cloudinary.uploader()
+                .destroy("temp_video/${getUserId()}", options)
+            if (result?.get("public_id").toString() != "ok") {
+                throw Exception(context.getString(R.string.deletion_from_cloudinary_failed))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return Result.failure(e)
+        }
+
+        // Step 3: Delete documents from the subscriptions collection
         try {
             val subscriptionQuery =
                 firestore.collection("subscriptions").whereEqualTo("userId", userId).get().await()
@@ -86,7 +101,7 @@ object FirestoreQueryUtil {
             return Result.failure(e)
         }
 
-        // Step 3: Delete the user account
+        // Step 4: Delete the user account
         try {
             user.delete().await()
         } catch (e: FirebaseAuthRecentLoginRequiredException) {
