@@ -1,4 +1,3 @@
-• Various enhancements and optimizations
-• Bug fixes and performance improvements
-• UI/UX tweaks for a better experience
-• Code refactoring and stability updates
+• Improved stability and security by updating the build process.
+• Enhanced environment configuration.
+• Enhanced developer tooling by improving the .gitignore.
