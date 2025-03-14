@@ -113,7 +113,10 @@ fun SubscriptionScreen(
                 val tabs = listOf(R.string.monthly, R.string.yearly)
                 val pagerState = rememberPagerState(pageCount = { tabs.size })
                 val initialLaunch = remember { mutableStateOf(true) }
-
+                val subscriptionMonthlyPrice =
+                    subscriptionViewModel.monthlyPrice.observeAsState(initial = stringResource(R.string.n_a))
+                val subscriptionYearlyPrice =
+                    subscriptionViewModel.yearlyPrice.observeAsState(initial = stringResource(R.string.n_a))
                 val purchaseResult = subscriptionViewModel.purchaseResult.observeAsState()
                 LaunchedEffect(purchaseResult.value) {
                     purchaseResult.value?.let { result ->
@@ -146,14 +149,15 @@ fun SubscriptionScreen(
                         }
                     }
 
-                    CustomTopNavigationBar(modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(
-                            start = dimensionResource(id = R.dimen.spacingXl),
-                            end = dimensionResource(id = R.dimen.spacingXl),
-                            top = dimensionResource(id = R.dimen.spacingXl)
-                        ),
+                    CustomTopNavigationBar(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(
+                                start = dimensionResource(id = R.dimen.spacingXl),
+                                end = dimensionResource(id = R.dimen.spacingXl),
+                                top = dimensionResource(id = R.dimen.spacingXl)
+                            ),
                         centerComposable = { AppNameText(modifier = Modifier.align(Alignment.Center)) },
                         endStringResource = R.string.skip,
                         endOnClick = {
@@ -175,37 +179,38 @@ fun SubscriptionScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         tabs.forEachIndexed { index, title ->
-                            Box(modifier = if (pagerState.currentPage == index) Modifier
-                                .wrapContentSize()
-                                .clip(
-                                    MaterialTheme.shapes.extraLarge
-                                )
-                                .background(MaterialTheme.colorScheme.onBackground)
-                                .padding(
-                                    horizontal = dimensionResource(id = R.dimen.spacingLg),
-                                    vertical = dimensionResource(id = R.dimen.spacingXs)
-                                )
-                                .clickable(interactionSource = remember {
-                                    MutableInteractionSource()
-                                }, indication = null) {
-                                    scope.launch {
-                                        pagerState.scrollToPage(index)
-                                    }
-                                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                } else Modifier
-                                .wrapContentSize()
-                                .padding(
-                                    horizontal = dimensionResource(id = R.dimen.spacingLg),
-                                    vertical = dimensionResource(id = R.dimen.spacingXs)
-                                )
-                                .clickable(interactionSource = remember {
-                                    MutableInteractionSource()
-                                }, indication = null) {
-                                    scope.launch {
-                                        pagerState.scrollToPage(index)
-                                    }
-                                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                }) {
+                            Box(
+                                modifier = if (pagerState.currentPage == index) Modifier
+                                    .wrapContentSize()
+                                    .clip(
+                                        MaterialTheme.shapes.extraLarge
+                                    )
+                                    .background(MaterialTheme.colorScheme.onBackground)
+                                    .padding(
+                                        horizontal = dimensionResource(id = R.dimen.spacingLg),
+                                        vertical = dimensionResource(id = R.dimen.spacingXs)
+                                    )
+                                    .clickable(interactionSource = remember {
+                                        MutableInteractionSource()
+                                    }, indication = null) {
+                                        scope.launch {
+                                            pagerState.scrollToPage(index)
+                                        }
+                                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                    } else Modifier
+                                    .wrapContentSize()
+                                    .padding(
+                                        horizontal = dimensionResource(id = R.dimen.spacingLg),
+                                        vertical = dimensionResource(id = R.dimen.spacingXs)
+                                    )
+                                    .clickable(interactionSource = remember {
+                                        MutableInteractionSource()
+                                    }, indication = null) {
+                                        scope.launch {
+                                            pagerState.scrollToPage(index)
+                                        }
+                                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                    }) {
                                 Text(
                                     modifier = Modifier.align(Alignment.Center),
                                     text = stringResource(id = title),
@@ -224,41 +229,44 @@ fun SubscriptionScreen(
                         when (page) {
                             0 -> {
                                 PremiumOptions(
-                                    prize = R.string._2_500_month, plan = R.string.monthly_premium
+                                    prize = subscriptionMonthlyPrice.value,
+                                    plan = R.string.monthly_premium
                                 )
                             }
 
                             1 -> {
                                 PremiumOptions(
-                                    prize = R.string._27_000_year, plan = R.string.yearly_premium
+                                    prize = subscriptionYearlyPrice.value,
+                                    plan = R.string.yearly_premium
                                 )
                             }
                         }
                     }
 
                     val isChecked = rememberSaveable { mutableStateOf(false) }
-                    Row(modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .padding(
-                            top = dimensionResource(id = R.dimen.spacingXl),
-                            start = dimensionResource(id = R.dimen.spacingXl),
-                            end = dimensionResource(id = R.dimen.spacingXl)
-                        )
-                        .clip(MaterialTheme.shapes.small)
-                        .background(MaterialTheme.colorScheme.onSurface)
-                        .clickable {
-                            isChecked.value = !isChecked.value
-                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                        }
-                        .padding(
-                            vertical = dimensionResource(
-                                id = R.dimen.spacingSm
-                            ),
-                            horizontal = dimensionResource(
-                                id = R.dimen.spacingXl
-                            ),
-                        ), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight()
+                            .padding(
+                                top = dimensionResource(id = R.dimen.spacingXl),
+                                start = dimensionResource(id = R.dimen.spacingXl),
+                                end = dimensionResource(id = R.dimen.spacingXl)
+                            )
+                            .clip(MaterialTheme.shapes.small)
+                            .background(MaterialTheme.colorScheme.onSurface)
+                            .clickable {
+                                isChecked.value = !isChecked.value
+                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                            }
+                            .padding(
+                                vertical = dimensionResource(
+                                    id = R.dimen.spacingSm
+                                ),
+                                horizontal = dimensionResource(
+                                    id = R.dimen.spacingXl
+                                ),
+                            ), verticalAlignment = Alignment.CenterVertically) {
 
                         val today = LocalDate.now()
                         val dateInSevenDays = today.plusDays(7)
@@ -301,10 +309,11 @@ fun SubscriptionScreen(
                                     stringResource(
                                         R.string.renews_on_at, dueDate, stringResource(
                                             id = if (pagerState.currentPage == 0) {
-                                                R.string._2_500_mth
+                                                R.string.price_per_mth
                                             } else {
-                                                R.string._27_000_yr
-                                            }
+                                                R.string.price_per_yr
+                                            },
+                                            if (pagerState.currentPage == 0) subscriptionMonthlyPrice.value else subscriptionYearlyPrice.value
                                         )
                                     )
                                 } else {
@@ -317,21 +326,22 @@ fun SubscriptionScreen(
                             )
                         }
 
-                        Box(modifier = if (isChecked.value) Modifier
-                            .size(18.dp)
-                            .clip(CircleShape)
-                            .clickable {
-                                isChecked.value = !isChecked.value
-                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                            } else Modifier
-                            .size(18.dp)
-                            .clip(CircleShape)
-                            .border(
-                                width = 1.dp,
-                                color = MaterialTheme.colorScheme.tertiary,
-                                shape = CircleShape
-                            )
-                            .background(MaterialTheme.colorScheme.onSurface),
+                        Box(
+                            modifier = if (isChecked.value) Modifier
+                                .size(18.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    isChecked.value = !isChecked.value
+                                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                } else Modifier
+                                .size(18.dp)
+                                .clip(CircleShape)
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    shape = CircleShape
+                                )
+                                .background(MaterialTheme.colorScheme.onSurface),
                             contentAlignment = Alignment.Center) {
                             if (isChecked.value) {
                                 Image(
@@ -365,38 +375,39 @@ fun SubscriptionScreen(
 
                     Spacer(modifier = Modifier.padding(vertical = dimensionResource(id = R.dimen.spacingMd)))
 
-                    Text(modifier = Modifier
-                        .wrapContentSize()
-                        .padding(
-                            start = dimensionResource(id = R.dimen.spacingXl),
-                            end = dimensionResource(id = R.dimen.spacingXl),
-                            bottom = dimensionResource(id = R.dimen.spacingXl)
-                        )
-                        .navigationBarsPadding()
-                        .align(Alignment.CenterHorizontally)
-                        .clickable(interactionSource = remember {
-                            MutableInteractionSource()
-                        }, indication = null) {
-                            scope.launch {
-                                subscriptionViewModel.restorePurchases(context = context)
-                                    .onSuccess {
-                                        goToHomeScreen(
-                                            navController = navController,
-                                            purchasesRestored = true
-                                        )
-                                    }.onFailure { exception ->
-                                        snackBarIsError.value = true
-                                        snackBarMessageResource.intValue = 0
-                                        snackBarMessage.value =
-                                            exception.localizedMessage ?: context.getString(
-                                                R.string.failed_to_restore_purchases
+                    Text(
+                        modifier = Modifier
+                            .wrapContentSize()
+                            .padding(
+                                start = dimensionResource(id = R.dimen.spacingXl),
+                                end = dimensionResource(id = R.dimen.spacingXl),
+                                bottom = dimensionResource(id = R.dimen.spacingXl)
+                            )
+                            .navigationBarsPadding()
+                            .align(Alignment.CenterHorizontally)
+                            .clickable(interactionSource = remember {
+                                MutableInteractionSource()
+                            }, indication = null) {
+                                scope.launch {
+                                    subscriptionViewModel.restorePurchases(context = context)
+                                        .onSuccess {
+                                            goToHomeScreen(
+                                                navController = navController,
+                                                purchasesRestored = true
                                             )
-                                        scope.launch {
-                                            snackBarHostState.showSnackbar("")
+                                        }.onFailure { exception ->
+                                            snackBarIsError.value = true
+                                            snackBarMessageResource.intValue = 0
+                                            snackBarMessage.value =
+                                                exception.localizedMessage ?: context.getString(
+                                                    R.string.failed_to_restore_purchases
+                                                )
+                                            scope.launch {
+                                                snackBarHostState.showSnackbar("")
+                                            }
                                         }
-                                    }
-                            }
-                        },
+                                }
+                            },
                         text = stringResource(R.string.restore_purchase),
                         color = MaterialTheme.colorScheme.tertiary,
                         style = MaterialTheme.typography.labelMedium,
@@ -483,7 +494,7 @@ fun goToHomeScreen(navController: NavController, purchasesRestored: Boolean = fa
 }
 
 @Composable
-fun PremiumOptions(prize: Int, plan: Int) {
+fun PremiumOptions(prize: String, plan: Int) {
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
@@ -581,7 +592,7 @@ fun PremiumOptions(prize: Int, plan: Int) {
         }
 
         item {
-            if (prize == R.string._2_500_month) {
+            if (plan == R.string.monthly_premium) {
                 Text(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -592,7 +603,7 @@ fun PremiumOptions(prize: Int, plan: Int) {
                             )
                         ),
                     text = stringResource(
-                        prize
+                        id = R.string.price_per_month, prize
                     ),
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.labelLarge,
@@ -612,7 +623,7 @@ fun PremiumOptions(prize: Int, plan: Int) {
                     text = buildAnnotatedString {
                         append(
                             stringResource(
-                                prize
+                                id = R.string.price_per_year, prize
                             )
                         )
                         withStyle(

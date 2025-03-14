@@ -12,12 +12,10 @@
     <string name="monthly">Monthly</string>
     <string name="yearly">Yearly</string>
     <string name="premium">Premium</string>
-    <string name="_2_500_month">₦2,500/month</string>
-    <string name="_2_500_mth">₦2,500/mth</string>
-    <string name="_27_000_year">₦27,000/year</string>
-    <string name="_27_000_yr">₦27,000/yr</string>
-    <string name="_2_500">₦2,500</string>
-    <string name="_27_000">₦27,000</string>
+    <string name="price_per_month">%1$s/month</string>
+    <string name="price_per_mth">%1$s/mth</string>
+    <string name="price_per_year">%1$s/year</string>
+    <string name="price_per_yr">%1$s/yr</string>
     <string name="still_weighing_your_options">Still weighing your options?</string>
     <string name="free_trial_selected">Free trial selected</string>
     <string name="restore_purchase">Restore Purchase</string>
@@ -240,5 +238,6 @@
     <string name="retrieving_size">Retrieving size</string>
     <string name="unknown_viewmodel_class">Unknown ViewModel class</string>
     <string name="deletion_from_cloudinary_failed">Deletion from cloudinary failed</string>
+    <string name="n_a">N/A</string>
 
 </resources>
