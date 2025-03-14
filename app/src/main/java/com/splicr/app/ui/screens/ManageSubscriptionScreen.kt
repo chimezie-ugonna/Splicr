@@ -77,9 +77,7 @@ fun ManageSubscriptionScreen(
 ) {
     SplicrTheme(isSystemInDarkTheme = isDarkTheme.value) {
         Surface(
-            modifier = Modifier
-                .fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
+            modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
         ) {
 
             Box(
@@ -108,6 +106,10 @@ fun ManageSubscriptionScreen(
                     subscriptionViewModel.subscriptionStatus.observeAsState(initial = SubscriptionStatus.NONE)
                 val subscriptionRenewalDate =
                     subscriptionViewModel.renewalDate.observeAsState(initial = null)
+                val subscriptionMonthlyPrice =
+                    subscriptionViewModel.monthlyPrice.observeAsState(initial = stringResource(R.string.n_a))
+                val subscriptionYearlyPrice =
+                    subscriptionViewModel.yearlyPrice.observeAsState(initial = stringResource(R.string.n_a))
                 val subscriptionExpiryDate =
                     subscriptionViewModel.expiryDate.observeAsState(initial = null)
                 val currentPlan = rememberSaveable {
@@ -177,13 +179,15 @@ fun ManageSubscriptionScreen(
                         when (page) {
                             0 -> {
                                 Options(
-                                    prize = R.string._2_500_month, plan = R.string.monthly_premium
+                                    prize = subscriptionMonthlyPrice.value,
+                                    plan = R.string.monthly_premium
                                 )
                             }
 
                             1 -> {
                                 Options(
-                                    prize = R.string._27_000_year, plan = R.string.yearly_premium
+                                    prize = subscriptionYearlyPrice.value,
+                                    plan = R.string.yearly_premium
                                 )
                             }
                         }
@@ -208,41 +212,42 @@ fun ManageSubscriptionScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             tabs.forEachIndexed { index, title ->
-                                Box(modifier = if (pagerState.currentPage == index) Modifier
-                                    .weight(
-                                        1f
-                                    )
-                                    .wrapContentHeight()
-                                    .clip(
-                                        MaterialTheme.shapes.small
-                                    )
-                                    .background(MaterialTheme.colorScheme.onBackground)
-                                    .padding(
-                                        horizontal = dimensionResource(id = R.dimen.spacingLg),
-                                        vertical = dimensionResource(id = R.dimen.spacingXs)
-                                    )
-                                    .clickable(interactionSource = remember {
-                                        MutableInteractionSource()
-                                    }, indication = null) {
-                                        scope.launch {
-                                            pagerState.scrollToPage(index)
-                                        }
-                                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                    } else Modifier
-                                    .weight(1f)
-                                    .wrapContentHeight()
-                                    .padding(
-                                        horizontal = dimensionResource(id = R.dimen.spacingLg),
-                                        vertical = dimensionResource(id = R.dimen.spacingXs)
-                                    )
-                                    .clickable(interactionSource = remember {
-                                        MutableInteractionSource()
-                                    }, indication = null) {
-                                        scope.launch {
-                                            pagerState.scrollToPage(index)
-                                        }
-                                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                    }) {
+                                Box(
+                                    modifier = if (pagerState.currentPage == index) Modifier
+                                        .weight(
+                                            1f
+                                        )
+                                        .wrapContentHeight()
+                                        .clip(
+                                            MaterialTheme.shapes.small
+                                        )
+                                        .background(MaterialTheme.colorScheme.onBackground)
+                                        .padding(
+                                            horizontal = dimensionResource(id = R.dimen.spacingLg),
+                                            vertical = dimensionResource(id = R.dimen.spacingXs)
+                                        )
+                                        .clickable(interactionSource = remember {
+                                            MutableInteractionSource()
+                                        }, indication = null) {
+                                            scope.launch {
+                                                pagerState.scrollToPage(index)
+                                            }
+                                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                        } else Modifier
+                                        .weight(1f)
+                                        .wrapContentHeight()
+                                        .padding(
+                                            horizontal = dimensionResource(id = R.dimen.spacingLg),
+                                            vertical = dimensionResource(id = R.dimen.spacingXs)
+                                        )
+                                        .clickable(interactionSource = remember {
+                                            MutableInteractionSource()
+                                        }, indication = null) {
+                                            scope.launch {
+                                                pagerState.scrollToPage(index)
+                                            }
+                                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                        }) {
                                     Text(
                                         modifier = Modifier.align(Alignment.Center),
                                         text = stringResource(id = title),
@@ -311,8 +316,10 @@ fun ManageSubscriptionScreen(
                                                 )
                                             } else {
                                                 stringResource(
-                                                    R.string.cancel_anytime,
-                                                    stringResource(id = R.string._2_500_mth)
+                                                    R.string.cancel_anytime, stringResource(
+                                                        id = R.string.price_per_mth,
+                                                        subscriptionMonthlyPrice.value
+                                                    )
                                                 )
                                             }
                                         } else {
@@ -323,8 +330,10 @@ fun ManageSubscriptionScreen(
                                                 )
                                             } else {
                                                 stringResource(
-                                                    R.string.cancel_anytime,
-                                                    stringResource(id = R.string._27_000_yr)
+                                                    R.string.cancel_anytime, stringResource(
+                                                        id = R.string.price_per_yr,
+                                                        subscriptionYearlyPrice.value
+                                                    )
                                                 )
                                             }
                                         }
@@ -333,26 +342,36 @@ fun ManageSubscriptionScreen(
                                             if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL) {
                                                 stringResource(
                                                     R.string.free_for_7_days_then_starting,
-                                                    stringResource(id = R.string._2_500_mth),
+                                                    stringResource(
+                                                        id = R.string.price_per_mth,
+                                                        subscriptionMonthlyPrice.value
+                                                    ),
                                                     subscriptionRenewalDate.value!!
                                                 )
                                             } else {
                                                 stringResource(
-                                                    R.string.cancel_anytime,
-                                                    stringResource(id = R.string._2_500_mth)
+                                                    R.string.cancel_anytime, stringResource(
+                                                        id = R.string.price_per_mth,
+                                                        subscriptionMonthlyPrice.value
+                                                    )
                                                 )
                                             }
                                         } else {
                                             if (subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL) {
                                                 stringResource(
                                                     R.string.free_for_7_days_then_starting,
-                                                    stringResource(id = R.string._27_000_yr),
+                                                    stringResource(
+                                                        id = R.string.price_per_yr,
+                                                        subscriptionYearlyPrice.value
+                                                    ),
                                                     subscriptionRenewalDate.value!!
                                                 )
                                             } else {
                                                 stringResource(
-                                                    R.string.cancel_anytime,
-                                                    stringResource(id = R.string._27_000_yr)
+                                                    R.string.cancel_anytime, stringResource(
+                                                        id = R.string.price_per_yr,
+                                                        subscriptionYearlyPrice.value
+                                                    )
                                                 )
                                             }
                                         }
@@ -360,25 +379,33 @@ fun ManageSubscriptionScreen(
                                         if (pagerState.currentPage == 0) {
                                             if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_FREE_TRIAL) {
                                                 stringResource(
-                                                    R.string.free_for_7_days_then,
-                                                    stringResource(id = R.string._2_500_mth)
+                                                    R.string.free_for_7_days_then, stringResource(
+                                                        id = R.string.price_per_mth,
+                                                        subscriptionMonthlyPrice.value
+                                                    )
                                                 )
                                             } else {
                                                 stringResource(
-                                                    R.string.cancel_anytime,
-                                                    stringResource(id = R.string._2_500_mth)
+                                                    R.string.cancel_anytime, stringResource(
+                                                        id = R.string.price_per_mth,
+                                                        subscriptionMonthlyPrice.value
+                                                    )
                                                 )
                                             }
                                         } else {
                                             if (subscriptionStatus.value == SubscriptionStatus.YEARLY_FREE_TRIAL) {
                                                 stringResource(
-                                                    R.string.free_for_7_days_then,
-                                                    stringResource(id = R.string._27_000_yr)
+                                                    R.string.free_for_7_days_then, stringResource(
+                                                        id = R.string.price_per_yr,
+                                                        subscriptionYearlyPrice.value
+                                                    )
                                                 )
                                             } else {
                                                 stringResource(
-                                                    R.string.cancel_anytime,
-                                                    stringResource(id = R.string._27_000_yr)
+                                                    R.string.cancel_anytime, stringResource(
+                                                        id = R.string.price_per_yr,
+                                                        subscriptionYearlyPrice.value
+                                                    )
                                                 )
                                             }
                                         }
@@ -393,8 +420,10 @@ fun ManageSubscriptionScreen(
                                                 )
                                             } else {
                                                 stringResource(
-                                                    R.string.cancel_anytime,
-                                                    stringResource(id = R.string._2_500_mth)
+                                                    R.string.cancel_anytime, stringResource(
+                                                        id = R.string.price_per_mth,
+                                                        subscriptionMonthlyPrice.value
+                                                    )
                                                 )
                                             }
                                         } else {
@@ -405,8 +434,10 @@ fun ManageSubscriptionScreen(
                                                 )
                                             } else {
                                                 stringResource(
-                                                    R.string.cancel_anytime,
-                                                    stringResource(id = R.string._27_000_yr)
+                                                    R.string.cancel_anytime, stringResource(
+                                                        id = R.string.price_per_yr,
+                                                        subscriptionYearlyPrice.value
+                                                    )
                                                 )
                                             }
                                         }
@@ -417,13 +448,16 @@ fun ManageSubscriptionScreen(
                                                     R.string.renews_on_at,
                                                     subscriptionRenewalDate.value!!,
                                                     stringResource(
-                                                        id = R.string._2_500_mth
+                                                        id = R.string.price_per_mth,
+                                                        subscriptionMonthlyPrice.value
                                                     )
                                                 )
                                             } else {
                                                 stringResource(
-                                                    R.string.cancel_anytime,
-                                                    stringResource(id = R.string._2_500_mth)
+                                                    R.string.cancel_anytime, stringResource(
+                                                        id = R.string.price_per_mth,
+                                                        subscriptionMonthlyPrice.value
+                                                    )
                                                 )
                                             }
                                         } else {
@@ -432,13 +466,16 @@ fun ManageSubscriptionScreen(
                                                     R.string.renews_on_at,
                                                     subscriptionRenewalDate.value!!,
                                                     stringResource(
-                                                        id = R.string._27_000_yr
+                                                        id = R.string.price_per_yr,
+                                                        subscriptionYearlyPrice.value
                                                     )
                                                 )
                                             } else {
                                                 stringResource(
-                                                    R.string.cancel_anytime,
-                                                    stringResource(id = R.string._27_000_yr)
+                                                    R.string.cancel_anytime, stringResource(
+                                                        id = R.string.price_per_yr,
+                                                        subscriptionYearlyPrice.value
+                                                    )
                                                 )
                                             }
                                         }
@@ -446,25 +483,33 @@ fun ManageSubscriptionScreen(
                                         if (pagerState.currentPage == 0) {
                                             if (subscriptionStatus.value == SubscriptionStatus.MONTHLY_SUBSCRIPTION) {
                                                 stringResource(
-                                                    R.string.renews_at,
-                                                    stringResource(id = R.string._2_500_mth)
+                                                    R.string.renews_at, stringResource(
+                                                        id = R.string.price_per_mth,
+                                                        subscriptionMonthlyPrice.value
+                                                    )
                                                 )
                                             } else {
                                                 stringResource(
-                                                    R.string.cancel_anytime,
-                                                    stringResource(id = R.string._2_500_mth)
+                                                    R.string.cancel_anytime, stringResource(
+                                                        id = R.string.price_per_mth,
+                                                        subscriptionMonthlyPrice.value
+                                                    )
                                                 )
                                             }
                                         } else {
                                             if (subscriptionStatus.value == SubscriptionStatus.YEARLY_SUBSCRIPTION) {
                                                 stringResource(
-                                                    R.string.renews_at,
-                                                    stringResource(id = R.string._27_000_yr)
+                                                    R.string.renews_at, stringResource(
+                                                        id = R.string.price_per_yr,
+                                                        subscriptionYearlyPrice.value
+                                                    )
                                                 )
                                             } else {
                                                 stringResource(
-                                                    R.string.cancel_anytime,
-                                                    stringResource(id = R.string._27_000_yr)
+                                                    R.string.cancel_anytime, stringResource(
+                                                        id = R.string.price_per_yr,
+                                                        subscriptionYearlyPrice.value
+                                                    )
                                                 )
                                             }
                                         }
@@ -472,11 +517,13 @@ fun ManageSubscriptionScreen(
                                 }
                             } else {
                                 if (pagerState.currentPage == 0) stringResource(
-                                    R.string.cancel_anytime,
-                                    stringResource(id = R.string._2_500_mth)
+                                    R.string.cancel_anytime, stringResource(
+                                        id = R.string.price_per_mth, subscriptionMonthlyPrice.value
+                                    )
                                 ) else stringResource(
-                                    R.string.cancel_anytime,
-                                    stringResource(id = R.string._27_000_yr)
+                                    R.string.cancel_anytime, stringResource(
+                                        id = R.string.price_per_yr, subscriptionYearlyPrice.value
+                                    )
                                 )
                             },
                             color = MaterialTheme.colorScheme.onBackground,
@@ -506,7 +553,7 @@ fun ManageSubscriptionScreen(
 }
 
 @Composable
-fun Options(prize: Int, plan: Int) {
+fun Options(prize: String, plan: Int) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -575,7 +622,7 @@ fun Options(prize: Int, plan: Int) {
                         textAlign = TextAlign.Start
                     )
 
-                    if (prize == R.string._2_500_month) {
+                    if (plan == R.string.monthly_premium) {
                         Text(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -586,7 +633,7 @@ fun Options(prize: Int, plan: Int) {
                                     )
                                 ),
                             text = stringResource(
-                                prize
+                                id = R.string.price_per_month, prize
                             ),
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.labelLarge,
@@ -606,7 +653,7 @@ fun Options(prize: Int, plan: Int) {
                             text = buildAnnotatedString {
                                 append(
                                     stringResource(
-                                        prize
+                                        id = R.string.price_per_year, prize
                                     )
                                 )
                                 withStyle(
@@ -625,6 +672,7 @@ fun Options(prize: Int, plan: Int) {
                             textAlign = TextAlign.Start
                         )
                     }
+
                 }
 
                 Image(

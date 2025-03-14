@@ -4,7 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.android.billingclient.api.AcknowledgePurchaseParams
@@ -30,6 +30,8 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
     private lateinit var billingClient: BillingClient
     val subscriptionStatus = MutableLiveData<SubscriptionStatus>()
     val renewalDate = MutableLiveData<String?>()
+    val monthlyPrice = MutableLiveData<String>()
+    val yearlyPrice = MutableLiveData<String>()
     val expiryDate = MutableLiveData<String?>()
     val purchaseResult = MutableLiveData<Result<Unit>>()
     val monthlyProductDetails = MutableLiveData<ProductDetails?>()
@@ -77,9 +79,19 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
         billingClient.queryProductDetailsAsync(queryProductDetailsParams) { billingResult, productDetailsList ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 productDetailsList.forEach { productDetails ->
+                    val price =
+                        productDetails.subscriptionOfferDetails?.firstOrNull()?.pricingPhases?.pricingPhaseList?.firstOrNull()?.formattedPrice
+                            ?: application.getString(R.string.n_a)
                     when (productDetails.productId) {
-                        "monthly_premium" -> monthlyProductDetails.postValue(productDetails)
-                        "yearly_premium" -> yearlyProductDetails.postValue(productDetails)
+                        "monthly_premium" -> {
+                            monthlyProductDetails.postValue(productDetails)
+                            monthlyPrice.postValue(price)
+                        }
+
+                        "yearly_premium" -> {
+                            yearlyProductDetails.postValue(productDetails)
+                            yearlyPrice.postValue(price)
+                        }
                     }
                 }
             } else {
@@ -276,7 +288,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
                     productDetailsList.firstOrNull { productDetails -> productDetails.productId == productId }
                 val hasFreeTrial = productDetail?.subscriptionOfferDetails?.any { offer ->
                     offer.offerTags.contains("monthly-free-trial") || offer.offerTags.contains("yearly-free-trial")
-                } ?: false
+                } == true
 
                 if (hasFreeTrial) {
                     val freeTrialStatus = if (productId == "monthly_premium") {
@@ -387,7 +399,7 @@ class SubscriptionViewModel(private val application: Application) : AndroidViewM
 
     fun cancelSubscription(activity: Activity) {
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("https://play.google.com/store/account/subscriptions")
+            data = "https://play.google.com/store/account/subscriptions".toUri()
             setPackage("com.android.vending")
         }
         activity.startActivity(intent)
