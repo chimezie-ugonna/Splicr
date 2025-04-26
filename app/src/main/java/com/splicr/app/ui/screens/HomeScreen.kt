@@ -120,7 +120,8 @@ fun HomeScreen(
                             top = dimensionResource(id = R.dimen.spacingXl)
                         )
                 ) {
-                    CustomTopNavigationBar(modifier = Modifier.fillMaxWidth(),
+                    CustomTopNavigationBar(
+                        modifier = Modifier.fillMaxWidth(),
                         startComposable = { AppNameText(modifier = Modifier.align(Alignment.CenterStart)) },
                         endImageResource = R.drawable.settings,
                         endStringResource = R.string.settings,
@@ -175,8 +176,7 @@ fun HomeScreen(
                     showLoaderBottomSheet.value = homeViewModel.isDeleting
 
                     val sheetState = rememberModalBottomSheetState(
-                        skipPartiallyExpanded = true,
-                        confirmValueChange = { false })
+                        skipPartiallyExpanded = true, confirmValueChange = { false })
 
                     CustomBottomSheet(
                         label = R.string.deleting_item,
@@ -279,7 +279,9 @@ fun HomeScreen(
                                             )
                                         )
                                     ) {
-                                        itemsIndexed(homeViewModel.canvasItems) { index, item ->
+                                        itemsIndexed(
+                                            items = homeViewModel.canvasItems,
+                                            key = { index, item -> item.id }) { index, item ->
                                             CanvasListItem(
                                                 index = index,
                                                 item = item,
@@ -320,15 +322,16 @@ fun HomeScreen(
                     }
                 }
 
-                Box(modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 71.dp)
-                    .clip(CircleShape)
-                    .clickable {
-                        navController.navigate("ChooseUploadFormatScreen")
-                    }
-                    .background(color = MaterialTheme.colorScheme.primary)
-                    .padding(all = dimensionResource(id = R.dimen.spacingSm))) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 71.dp)
+                        .clip(CircleShape)
+                        .clickable {
+                            navController.navigate("ChooseUploadFormatScreen")
+                        }
+                        .background(color = MaterialTheme.colorScheme.primary)
+                        .padding(all = dimensionResource(id = R.dimen.spacingSm))) {
                     Image(
                         modifier = Modifier.align(Alignment.Center),
                         painter = painterResource(id = R.drawable.scissor),

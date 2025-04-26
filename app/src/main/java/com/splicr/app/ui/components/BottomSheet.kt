@@ -4,7 +4,6 @@ package com.splicr.app.ui.components
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -80,6 +79,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -180,7 +180,8 @@ fun CustomBottomSheet(
                     )
             ) {
                 if (loaderList.contains(label).not()) {
-                    Text(text = stringResource(R.string.close),
+                    Text(
+                        text = stringResource(R.string.close),
                         modifier = Modifier
                             .wrapContentSize()
                             .align(Alignment.Start)
@@ -391,115 +392,108 @@ fun CustomBottomSheet(
                                 .wrapContentHeight()
                         ) {
                             itemsIndexed(listItems) { index, item ->
-                                CustomListItem(modifier = if (item.showArrow) Modifier
-                                    .customModifier(
-                                        index = index,
-                                        listSize = listItems.size,
-                                        topPadding = dimensionResource(
-                                            id = R.dimen.spacingSm
+                                CustomListItem(
+                                    modifier = if (item.showArrow) Modifier
+                                        .customModifier(
+                                            index = index,
+                                            listSize = listItems.size,
+                                            topPadding = dimensionResource(
+                                                id = R.dimen.spacingSm
+                                            )
                                         )
-                                    )
-                                    .clickable {
-                                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                                            if (!sheetState.isVisible) {
-                                                showBottomSheet.value = false
-                                                if (hasPerformedHapticFeedback != null) {
-                                                    hasPerformedHapticFeedback.value = false
-                                                }
-                                            }
-                                            when (item.titleResource) {
-                                                R.string.whatsapp -> {
-                                                    try {
-                                                        context.startActivity(
-                                                            Intent(
-                                                                Intent.ACTION_VIEW, Uri.parse(
-                                                                    "whatsapp://send?phone=${item.subText}"
-                                                                )
-                                                            )
-                                                        )
-                                                    } catch (_: ActivityNotFoundException) {
-                                                        context.startActivity(
-                                                            Intent(
-                                                                Intent.ACTION_VIEW, Uri.parse(
-                                                                    "https://wa.me/${item.subText}"
-                                                                )
-                                                            )
-                                                        )
+                                        .clickable {
+                                            scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                                if (!sheetState.isVisible) {
+                                                    showBottomSheet.value = false
+                                                    if (hasPerformedHapticFeedback != null) {
+                                                        hasPerformedHapticFeedback.value = false
                                                     }
                                                 }
+                                                when (item.titleResource) {
+                                                    R.string.whatsapp -> {
+                                                        try {
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    Intent.ACTION_VIEW,
+                                                                    "whatsapp://send?phone=${item.subText}".toUri()
+                                                                )
+                                                            )
+                                                        } catch (_: ActivityNotFoundException) {
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    Intent.ACTION_VIEW,
+                                                                    "https://wa.me/${item.subText}".toUri()
+                                                                )
+                                                            )
+                                                        }
+                                                    }
 
-                                                R.string.x -> {
-                                                    try {
-                                                        context.startActivity(
-                                                            Intent(
-                                                                Intent.ACTION_VIEW, Uri.parse(
+                                                    R.string.x -> {
+                                                        try {
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    Intent.ACTION_VIEW,
                                                                     "twitter://user?screen_name=${
                                                                         item.subText
-                                                                    }"
+                                                                    }".toUri()
                                                                 )
                                                             )
-                                                        )
-                                                    } catch (_: ActivityNotFoundException) {
-                                                        context.startActivity(
-                                                            Intent(
-                                                                Intent.ACTION_VIEW, Uri.parse(
+                                                        } catch (_: ActivityNotFoundException) {
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    Intent.ACTION_VIEW,
                                                                     "https://twitter.com/${
                                                                         item.subText
-                                                                    }"
+                                                                    }".toUri()
                                                                 )
                                                             )
-                                                        )
+                                                        }
                                                     }
-                                                }
 
-                                                R.string.instagram -> {
-                                                    try {
-                                                        context.startActivity(
-                                                            Intent(
-                                                                Intent.ACTION_VIEW, Uri.parse(
+                                                    R.string.instagram -> {
+                                                        try {
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    Intent.ACTION_VIEW,
                                                                     "instagram://user?username=${
                                                                         item.subText
-                                                                    }"
+                                                                    }".toUri()
                                                                 )
                                                             )
-                                                        )
-                                                    } catch (_: ActivityNotFoundException) {
-                                                        context.startActivity(
-                                                            Intent(
-                                                                Intent.ACTION_VIEW, Uri.parse(
+                                                        } catch (_: ActivityNotFoundException) {
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    Intent.ACTION_VIEW,
                                                                     "https://instagram.com/${
                                                                         item.subText
-                                                                    }"
+                                                                    }".toUri()
                                                                 )
                                                             )
-                                                        )
+                                                        }
                                                     }
-                                                }
 
-                                                R.string.facebook -> {
-                                                    try {
-                                                        context.startActivity(
-                                                            Intent(
-                                                                Intent.ACTION_VIEW, Uri.parse(
-                                                                    "fb://profile/${item.subText}"
+                                                    R.string.facebook -> {
+                                                        try {
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    Intent.ACTION_VIEW,
+                                                                    "fb://profile/${item.subText}".toUri()
                                                                 )
                                                             )
-                                                        )
-                                                    } catch (_: ActivityNotFoundException) {
-                                                        context.startActivity(
-                                                            Intent(
-                                                                Intent.ACTION_VIEW, Uri.parse(
-                                                                    "https://facebook.com/${item.subText}"
+                                                        } catch (_: ActivityNotFoundException) {
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    Intent.ACTION_VIEW,
+                                                                    "https://facebook.com/${item.subText}".toUri()
                                                                 )
                                                             )
-                                                        )
+                                                        }
                                                     }
                                                 }
                                             }
-                                        }
-                                    } else Modifier.customModifier(
-                                    index = index, listSize = listItems.size
-                                ),
+                                        } else Modifier.customModifier(
+                                        index = index, listSize = listItems.size
+                                    ),
                                     showDivider = index != listItems.size - 1,
                                     textStringResource = item.titleResource,
                                     textString = item.titleString,
@@ -546,17 +540,18 @@ fun CustomBottomSheet(
                             label = "horizontal loader"
                         )
 
-                        Box(modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentHeight()
-                            .padding(top = dimensionResource(id = R.dimen.spacingXl))
-                            .background(
-                                color = MaterialTheme.colorScheme.surface,
-                                shape = MaterialTheme.shapes.extraLarge
-                            )
-                            .onGloballyPositioned { coordinates ->
-                                boxWidth = coordinates.size.width
-                            }) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .wrapContentHeight()
+                                .padding(top = dimensionResource(id = R.dimen.spacingXl))
+                                .background(
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = MaterialTheme.shapes.extraLarge
+                                )
+                                .onGloballyPositioned { coordinates ->
+                                    boxWidth = coordinates.size.width
+                                }) {
                             Box(
                                 modifier = Modifier
                                     .width(width = dimensionResource(id = R.dimen.spacingHuge))
@@ -692,33 +687,34 @@ fun CustomBottomSheet(
                                 )
                             )
                             repeat(listItems.size) { index ->
-                                Image(modifier = Modifier
-                                    .size(size = dimensionResource(id = R.dimen.spacingXl))
-                                    .clickable(interactionSource = remember {
-                                        MutableInteractionSource()
-                                    }, indication = null) {
-                                        if (fileUriString != null) {
-                                            shareVideo(
-                                                context = context,
-                                                videoUri = Uri.parse(fileUriString),
-                                                packageName = listItems[index][1] as String,
-                                                fallbackPackageName = if (listItems[index][2] != null) {
-                                                    listItems[index][2] as String
-                                                } else null
-                                            ) { result, errorMessageResource ->
-                                                if (!result && errorMessageResource != null) {
-                                                    snackBarIsError.value = true
-                                                    snackBarMessageResource.value =
-                                                        errorMessageResource
-                                                    scope.launch {
-                                                        snackBarHostState.showSnackbar(
-                                                            ""
-                                                        )
+                                Image(
+                                    modifier = Modifier
+                                        .size(size = dimensionResource(id = R.dimen.spacingXl))
+                                        .clickable(interactionSource = remember {
+                                            MutableInteractionSource()
+                                        }, indication = null) {
+                                            if (fileUriString != null) {
+                                                shareVideo(
+                                                    context = context,
+                                                    videoUri = fileUriString.toUri(),
+                                                    packageName = listItems[index][1] as String,
+                                                    fallbackPackageName = if (listItems[index][2] != null) {
+                                                        listItems[index][2] as String
+                                                    } else null
+                                                ) { result, errorMessageResource ->
+                                                    if (!result && errorMessageResource != null) {
+                                                        snackBarIsError.value = true
+                                                        snackBarMessageResource.value =
+                                                            errorMessageResource
+                                                        scope.launch {
+                                                            snackBarHostState.showSnackbar(
+                                                                ""
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }
-                                        }
-                                    },
+                                        },
                                     painter = painterResource(id = listItems[index][0] as Int),
                                     contentDescription = null
                                 )
@@ -773,18 +769,19 @@ fun CustomBottomSheet(
                                     ), horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 items(emojiList.size) { index: Int ->
-                                    Box(modifier = Modifier
-                                        .clip(CircleShape)
-                                        .clickable {
-                                            tappedItemIndex.intValue = index
-                                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                                        }
-                                        .background(
-                                            color = if (tappedItemIndex.intValue == index) MaterialTheme.colorScheme.primary else Color(
-                                                0xFF2A2D22
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .clickable {
+                                                tappedItemIndex.intValue = index
+                                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                            }
+                                            .background(
+                                                color = if (tappedItemIndex.intValue == index) MaterialTheme.colorScheme.primary else Color(
+                                                    0xFF2A2D22
+                                                )
                                             )
-                                        )
-                                        .padding(all = dimensionResource(id = R.dimen.spacingMd))) {
+                                            .padding(all = dimensionResource(id = R.dimen.spacingMd))) {
                                         Image(
                                             modifier = Modifier
                                                 .size(24.dp)
